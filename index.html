@@ -1103,6 +1103,120 @@ body {
 }
 .photo-lightbox-close:hover { background: rgba(255,255,255,.25); }
 
+/* ═══ PIN PAD SYSTEM ════════════════════════════════════════════════════════ */
+.pin-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0);
+  backdrop-filter: blur(0px) brightness(1);
+  -webkit-backdrop-filter: blur(0px) brightness(1);
+  transition: background .25s ease, backdrop-filter .25s ease, -webkit-backdrop-filter .25s ease;
+  pointer-events: none;
+}
+.pin-overlay.open {
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px) brightness(0.7);
+  -webkit-backdrop-filter: blur(6px) brightness(0.7);
+  pointer-events: all;
+}
+.pin-card {
+  background: var(--surface);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.15);
+  padding: 24px 20px 20px;
+  width: 300px;
+  transform: scale(0.92) translateY(16px);
+  opacity: 0;
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1), opacity .22s ease;
+}
+.pin-overlay.open .pin-card {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+.pin-title {
+  font-family: var(--font);
+  font-size: 17px; font-weight: 500;
+  color: var(--text); text-align: center;
+  margin-bottom: 4px;
+}
+.pin-subtitle {
+  font-size: 12px; color: var(--text3);
+  text-align: center; margin-bottom: 18px;
+}
+/* PIN dots */
+.pin-dots {
+  display: flex; justify-content: center; gap: 10px;
+  margin-bottom: 20px;
+}
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border-md);
+  background: var(--bg);
+  transition: background .15s, border-color .15s, transform .12s;
+}
+.pin-dot.filled {
+  background: var(--red); border-color: var(--red);
+  transform: scale(1.1);
+}
+.pin-dot.error {
+  background: var(--red); border-color: var(--red);
+  animation: pin-shake .35s ease;
+}
+@keyframes pin-shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-5px); }
+  40%      { transform: translateX(5px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+/* Numpad — 3-3-3-1 layout, biggest numbers top-right (9) */
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.pin-key {
+  background: var(--bg);
+  border: 1px solid var(--border-md);
+  border-radius: 12px;
+  font-size: 22px; font-weight: 500;
+  color: var(--text);
+  height: 60px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .1s, transform .08s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.pin-key:active, .pin-key.pressed {
+  background: var(--bg2); transform: scale(0.94);
+}
+.pin-key.backspace {
+  font-size: 20px; color: var(--text3);
+}
+.pin-key.zero {
+  grid-column: 2; /* center the zero */
+}
+.pin-key.cancel-btn {
+  background: none; border-color: transparent;
+  color: var(--text3); font-size: 13px; font-weight: 500;
+}
+.pin-key.cancel-btn:active { background: var(--bg); }
+.pin-error-msg {
+  text-align: center; font-size: 12px;
+  color: var(--red); margin-top: 10px;
+  min-height: 16px; font-weight: 500;
+}
+/* PIN setup in user modal */
+.pin-setup-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.pin-setup-input {
+  flex: 1; letter-spacing: 0.3em;
+  font-family: var(--mono); font-size: 20px;
+  text-align: center;
+}
+
 </style>
 </head>
 <body>
@@ -1473,6 +1587,7 @@ body {
       <div class="form-field"><label class="form-label" data-i18n="role">Role</label><select class="form-input" id="uRole"></select></div>
       <div class="form-field"><label class="form-label" data-i18n="shift">Shift</label><select class="form-input" id="uShift"></select></div>
     </div>
+    <div class="form-field" style="margin-top:2px;"><label class="form-label">6-Digit PIN <span style="color:var(--text3);font-weight:400;">(required to mark tasks complete)</span></label><input class="form-input" id="uPin" type="tel" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="off" style="letter-spacing:0.4em;font-size:20px;text-align:center;"></div>
     <div style="background:var(--blue-light);border:1px solid #B8D0EE;border-radius:8px;padding:12px 14px;font-size:13px;color:var(--blue);margin-top:4px;line-height:1.6;" data-i18n="email_note">📧 This person will receive an email whenever a task is assigned to them.</div>
     <div class="modal-footer"><button class="btn-ghost" onclick="closeUserModal()" data-i18n="cancel">Cancel</button><button class="btn-primary" onclick="saveUser()" data-i18n="add_member">Add Member</button></div>
   </div>
@@ -1575,6 +1690,41 @@ body {
 <div class="photo-lightbox" id="photoLightbox" onclick="closePhotoLightbox(event)">
   <button class="photo-lightbox-close" onclick="closeLightbox()">×</button>
   <img id="photoLightboxImg" src="" alt="Task photo">
+</div>
+
+<!-- PIN PAD OVERLAY -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-card">
+    <div class="pin-title" id="pinTitle">Enter your PIN</div>
+    <div class="pin-subtitle" id="pinSubtitle">6-digit PIN required to complete task</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+      <div class="pin-dot" id="pd4"></div>
+      <div class="pin-dot" id="pd5"></div>
+    </div>
+    <div class="pin-pad">
+      <!-- Row 1: 7 8 9 (biggest numbers top-right) -->
+      <button class="pin-key" onclick="pinKey(7)">7</button>
+      <button class="pin-key" onclick="pinKey(8)">8</button>
+      <button class="pin-key" onclick="pinKey(9)">9</button>
+      <!-- Row 2: 4 5 6 -->
+      <button class="pin-key" onclick="pinKey(4)">4</button>
+      <button class="pin-key" onclick="pinKey(5)">5</button>
+      <button class="pin-key" onclick="pinKey(6)">6</button>
+      <!-- Row 3: 1 2 3 -->
+      <button class="pin-key" onclick="pinKey(1)">1</button>
+      <button class="pin-key" onclick="pinKey(2)">2</button>
+      <button class="pin-key" onclick="pinKey(3)">3</button>
+      <!-- Row 4: cancel [0 centered] backspace -->
+      <button class="pin-key cancel-btn" onclick="closePinPad()">Cancel</button>
+      <button class="pin-key zero" onclick="pinKey(0)">0</button>
+      <button class="pin-key backspace" onclick="pinBackspace()">⌫</button>
+    </div>
+    <div class="pin-error-msg" id="pinErrorMsg"></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -2298,7 +2448,7 @@ function renderUserList(){
   document.getElementById('userList').innerHTML=users.map(u=>{const[rbg,rtxt]=ROLE_COLORS[u.role]||['#F1F3F4','#5F6368'];return`<div class="user-row"><div class="user-avatar" style="background:${u.color}22;color:${u.color};">${getInitials(u.name)}</div><div style="flex:1;min-width:0;"><div class="user-name">${u.name}</div><div class="user-email">${u.email}</div></div><span style="font-size:9.5px;color:var(--text3);margin-right:4px;">${u.shift}</span><span class="user-role" style="background:${rbg};color:${rtxt};">${t('role_'+u.role)}</span><button class="icon-btn del" onclick="deleteUser(${u.id})" style="margin-left:6px;">🗑️</button></div>`;}).join('')||`<div class="no-tasks">${t('no_tasks_today')}</div>`;
 }
 function deleteUser(id){if(!confirm('Remove this team member?'))return;users=users.filter(x=>x.id!==id);tasks.forEach(t=>{if(t.assignId===id)t.assignId=0;});renderUserList();populateUserDropdowns();updateStats();showToast('Team member removed','');}
-function openAddUserModal(){document.getElementById('userModalTitle').textContent=t('add_member');document.getElementById('uName').value='';document.getElementById('uEmail').value='';document.getElementById('uRole').value='team';document.getElementById('uShift').value='AM';document.getElementById('userModal').style.display='flex';}
+function openAddUserModal(){document.getElementById('userModalTitle').textContent=t('add_member');document.getElementById('uName').value='';document.getElementById('uEmail').value='';document.getElementById('uRole').value='team';document.getElementById('uShift').value='AM';var pe=document.getElementById('uPin');if(pe)pe.value='';document.getElementById('userModal').style.display='flex';}
 function closeUserModal(){document.getElementById('userModal').style.display='none';}
 function closeUserModalOnBg(e){if(e.target.id==='userModal')closeUserModal();}
 function saveUser(){
@@ -2955,9 +3105,26 @@ function wireSheetClicks(container) {
     var onc = el.getAttribute('onclick');
     el.removeAttribute('onclick');
     el.addEventListener('click', function(e) {
+      // Only stop propagation on the sheet overlay background — not on buttons inside
       e.stopPropagation();
-      try { eval(onc); } catch(err) { console.warn('sheet onclick err', err); }
-      // After any action, refresh the sheet content
+      // Run the onclick in window scope so all global functions are reachable
+      try {
+        var fn = new Function(
+          'openEditModal','openReschedModal','confirmDelete','toggleTaskAndRefresh',
+          'toggleInstructions','triggerPhotoUpload','deleteTaskPhoto','openPhotoLightbox',
+          'openAddModalForDate','closeDayPanel','openPinPad','selectedDateStr',
+          onc
+        );
+        fn(
+          openEditModal, openReschedModal, confirmDelete, toggleTaskAndRefresh,
+          toggleInstructions, triggerPhotoUpload, deleteTaskPhoto, openPhotoLightbox,
+          openAddModalForDate, closeDayPanel, openPinPad, selectedDateStr
+        );
+      } catch(err) {
+        // Fallback: plain eval in window scope
+        try { (0, eval)('(function(){' + onc + '})()'); } catch(e2) { console.warn('sheet onclick:', e2.message, '|', onc); }
+      }
+      // Refresh sheet after any action
       setTimeout(function() {
         var daySheet = document.getElementById('daySheetOverlay');
         if (daySheet && daySheet.classList.contains('open')) {
@@ -2971,7 +3138,7 @@ function wireSheetClicks(container) {
             wireSheetClicks(dst);
           }
         }
-      }, 80);
+      }, 120);
     });
   });
 }
@@ -3329,11 +3496,13 @@ function taskToRow(task) {
 
 function dbToUser(r) {
   if (!r) return null;
-  return { id: r.id, name: r.name || '', email: r.email || '', role: r.role || 'team', shift: r.shift || 'AM', color: r.color || AVATAR_COLORS[0] };
+  return { id: r.id, name: r.name || '', email: r.email || '', role: r.role || 'team', shift: r.shift || 'AM', color: r.color || AVATAR_COLORS[0], pin: r.pin || null };
 }
 
 function userToRow(u) {
-  return { name: u.name, email: u.email, role: u.role, shift: u.shift, color: u.color };
+  var row = { name: u.name, email: u.email, role: u.role, shift: u.shift, color: u.color };
+  if (u.pin) row.pin = String(u.pin);
+  return row;
 }
 
 // ── LOAD TASKS ────────────────────────────────────────────────────────────────
@@ -3486,7 +3655,7 @@ async function initSupabase() {
 
     hideSbBanner();
     setSyncDot('live');
-    showToast('✓ Connected to Supabase', 'success');
+    // Connection success is silent — sync dot going Online is enough
 
     renderCal(); updateStats(); populateUserDropdowns();
     if (document.getElementById('view-tasks').classList.contains('active'))   renderTaskTable();
@@ -3781,18 +3950,27 @@ function renderHistoryList() {
     var email = document.getElementById('uEmail').value.trim();
     var role  = document.getElementById('uRole').value;
     var shift = document.getElementById('uShift').value;
+    var pinEl = document.getElementById('uPin');
+    var pin   = pinEl ? pinEl.value.trim() : '';
     if (!name || !email) { showToast('Please fill in name and email', 'error'); return; }
     if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) { showToast('Invalid email', 'error'); return; }
+    if (pin && (pin.length !== 6 || !/^\d{6}$/.test(pin))) {
+      showToast('PIN must be exactly 6 digits', 'error'); return;
+    }
     var color   = AVATAR_COLORS[users.length % AVATAR_COLORS.length];
     var tempId  = nextUserId++;
-    var newUser = { id:tempId, name:name, email:email, role:role, shift:shift, color:color };
+    var newUser = { id:tempId, name:name, email:email, role:role, shift:shift, color:color, pin: pin || null };
     users.push(newUser);
     closeUserModal(); renderUserList(); populateUserDropdowns();
-    showToast(name + ' added', 'success');
+    showToast(name + ' added' + (pin ? ' with PIN' : ' — add a PIN in Team Members'), 'success');
     if (sbReady) {
-      sbWrite('Insert user', async function(){
+      sbWrite('Insert user', async function() {
         var inserted = await sbPost('users', userToRow(newUser));
-        if (inserted && inserted[0]) { var idx = users.findIndex(function(u){ return u.id === tempId; }); if (idx !== -1) users[idx].id = inserted[0].id; populateUserDropdowns(); }
+        if (inserted && inserted[0]) {
+          var idx = users.findIndex(function(u){return u.id===tempId;});
+          if (idx !== -1) { users[idx].id = inserted[0].id; }
+          populateUserDropdowns();
+        }
       });
     }
   };
@@ -3952,6 +4130,165 @@ function closeLightbox() {
 function closePhotoLightbox(e) {
   if (e.target === document.getElementById('photoLightbox')) closeLightbox();
 }
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PIN PAD SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var _pinBuffer     = '';      // digits entered so far
+var _pinCallback   = null;    // fn(userId) called on success
+var _pinTaskId     = null;    // task being completed
+var _pinAttempts   = 0;       // wrong attempts counter
+
+function openPinPad(taskId) {
+  _pinTaskId  = taskId;
+  _pinBuffer  = '';
+  _pinAttempts = 0;
+  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
+  var taskName = task ? task.name : 'task';
+  document.getElementById('pinTitle').textContent = 'Enter your PIN';
+  document.getElementById('pinSubtitle').textContent = 'Mark "' + taskName.slice(0, 32) + (taskName.length > 32 ? '…' : '') + '" complete';
+  document.getElementById('pinErrorMsg').textContent = '';
+  updatePinDots();
+  document.getElementById('pinOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePinPad() {
+  document.getElementById('pinOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  _pinBuffer  = '';
+  _pinCallback = null;
+  _pinTaskId  = null;
+}
+
+function pinKey(digit) {
+  if (_pinBuffer.length >= 6) return;
+  _pinBuffer += String(digit);
+  // Visual press feedback
+  updatePinDots();
+  if (_pinBuffer.length === 6) {
+    setTimeout(checkPin, 120); // slight delay so last dot shows
+  }
+}
+
+function pinBackspace() {
+  if (_pinBuffer.length === 0) return;
+  _pinBuffer = _pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pinErrorMsg').textContent = '';
+}
+
+function updatePinDots() {
+  for (var i = 0; i < 6; i++) {
+    var dot = document.getElementById('pd' + i);
+    if (!dot) continue;
+    dot.classList.remove('error');
+    if (i < _pinBuffer.length) dot.classList.add('filled');
+    else dot.classList.remove('filled');
+  }
+}
+
+function pinShakeError(msg) {
+  for (var i = 0; i < 6; i++) {
+    var dot = document.getElementById('pd' + i);
+    if (dot) { dot.classList.remove('filled'); dot.classList.add('error'); }
+  }
+  document.getElementById('pinErrorMsg').textContent = msg;
+  setTimeout(function() {
+    _pinBuffer = '';
+    updatePinDots();
+    for (var i = 0; i < 6; i++) {
+      var dot = document.getElementById('pd' + i);
+      if (dot) dot.classList.remove('error');
+    }
+  }, 500);
+}
+
+function checkPin() {
+  var entered = _pinBuffer;
+  // Find which user has this PIN
+  var matchedUser = null;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].pin && String(users[i].pin) === String(entered)) {
+      matchedUser = users[i];
+      break;
+    }
+  }
+
+  if (!matchedUser) {
+    _pinAttempts++;
+    if (_pinAttempts >= 5) {
+      pinShakeError('Too many attempts. Try again later.');
+      setTimeout(closePinPad, 1500);
+    } else {
+      pinShakeError('Incorrect PIN. Try again.');
+    }
+    return;
+  }
+
+  // PIN matched — complete the task
+  closePinPad();
+  var taskId = _pinTaskId;
+  showToast('✓ Completed by ' + matchedUser.name, 'success');
+  // Call the actual toggle
+  toggleTaskAndRefresh(taskId, matchedUser.id);
+}
+
+// ── Override toggleTaskAndRefresh to intercept checkbox taps ──────────────────
+// On mobile, tapping the checkbox now opens PIN pad instead of toggling directly
+// On desktop, same behavior (directors will use it too)
+(function() {
+  var _origToggle = window.toggleTaskAndRefresh;
+  window.toggleTaskAndRefresh = function(taskId, bypassUserId) {
+    var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
+    if (!task) return;
+
+    // If already done, allow un-checking without PIN (un-complete is low-risk)
+    if (task.done) {
+      _origToggle(taskId);
+      return;
+    }
+
+    // If called with a bypassUserId (from PIN confirmation), go straight through
+    if (bypassUserId) {
+      _origToggle(taskId);
+      return;
+    }
+
+    // Check if any users have PINs set up
+    var anyPins = users.some(function(u) { return u.pin && String(u.pin).length === 6; });
+    if (!anyPins) {
+      // No PINs configured yet — just toggle normally with a hint
+      _origToggle(taskId);
+      showToast('Tip: set up PINs in Team Members to require verification', '');
+      return;
+    }
+
+    // Open PIN pad
+    openPinPad(taskId);
+  };
+})();
+
+// ── PIN field in user modal ────────────────────────────────────────────────────
+// Override saveUser to also capture the PIN field
+(function() {
+  var _origSave = window.saveUser;
+  window.saveUser = async function() {
+    // Grab PIN from the modal field before calling original
+    var pinVal = document.getElementById('uPin') ? document.getElementById('uPin').value.trim() : '';
+    if (pinVal && (pinVal.length !== 6 || !/^\d{6}$/.test(pinVal))) {
+      showToast('PIN must be exactly 6 digits', 'error');
+      return;
+    }
+    // Temporarily stash pin so original saveUser can pick it up
+    window._pendingPin = pinVal || null;
+    await _origSave();
+    window._pendingPin = null;
+  };
+})();
 
 
 </script>
