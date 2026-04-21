@@ -3044,6 +3044,8 @@ populateSelects();
 renderCal();
 updateStats();
 document.getElementById('todayStrip').classList.add('expanded');
+// Local pre-populate so calendar looks right before Supabase loads
+setTimeout(autoPopulateAll, 50);
 document.querySelectorAll('.view').forEach(el=>{el.style.display='none';el.classList.remove('active');});
 const cv=document.getElementById('view-calendar');cv.style.display='flex';cv.classList.add('active');
 document.getElementById('monthViewWrap').style.display='flex';
@@ -3104,25 +3106,19 @@ function wireSheetClicks(container) {
   container.querySelectorAll('[onclick]').forEach(function(el) {
     var onc = el.getAttribute('onclick');
     el.removeAttribute('onclick');
+    // Store as data attr so we can inspect if needed
+    el.dataset.sheetOnclick = onc;
     el.addEventListener('click', function(e) {
-      // Only stop propagation on the sheet overlay background — not on buttons inside
       e.stopPropagation();
-      // Run the onclick in window scope so all global functions are reachable
+      // Execute in true global scope by wrapping in a script element
+      // This guarantees every window-level function is reachable
       try {
-        var fn = new Function(
-          'openEditModal','openReschedModal','confirmDelete','toggleTaskAndRefresh',
-          'toggleInstructions','triggerPhotoUpload','deleteTaskPhoto','openPhotoLightbox',
-          'openAddModalForDate','closeDayPanel','openPinPad','selectedDateStr',
-          onc
-        );
-        fn(
-          openEditModal, openReschedModal, confirmDelete, toggleTaskAndRefresh,
-          toggleInstructions, triggerPhotoUpload, deleteTaskPhoto, openPhotoLightbox,
-          openAddModalForDate, closeDayPanel, openPinPad, selectedDateStr
-        );
+        var s = document.createElement('script');
+        s.textContent = '(function(){ try{' + onc + '}catch(e){console.warn("sheet fn:",e.message);} })();';
+        document.head.appendChild(s);
+        document.head.removeChild(s);
       } catch(err) {
-        // Fallback: plain eval in window scope
-        try { (0, eval)('(function(){' + onc + '})()'); } catch(e2) { console.warn('sheet onclick:', e2.message, '|', onc); }
+        console.warn('wireSheetClicks error:', err.message, '|', onc);
       }
       // Refresh sheet after any action
       setTimeout(function() {
@@ -3138,7 +3134,7 @@ function wireSheetClicks(container) {
             wireSheetClicks(dst);
           }
         }
-      }, 120);
+      }, 150);
     });
   });
 }
@@ -3388,7 +3384,8 @@ function queueWrite(fn, label) {
 function updateQueueBadge() {
   var el = document.getElementById('queueBadge');
   if (!el) return;
-  if (writeQueue.length > 0) {
+  // Only show badge after successful init — pre-init queuing is normal, not an error
+  if (writeQueue.length > 0 && sbReady) {
     el.textContent = writeQueue.length + ' write' + (writeQueue.length > 1 ? 's' : '') + ' pending — tap to retry';
     el.classList.add('show');
   } else {
@@ -3665,6 +3662,7 @@ async function initSupabase() {
 
     startAutoRefresh();
     if (writeQueue.length) retryQueue();
+    scheduleAutoPopulate(); // populate 3-month horizon
 
   } catch(err) {
     console.error('[sb] init attempt', window._initAttempt, 'failed:', err.message);
@@ -4011,11 +4009,19 @@ function triggerPhotoUpload(taskId) {
   var input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
-  input.capture = 'environment'; // prefer rear camera on mobile
+  // On mobile: open camera directly (rear-facing). On desktop: file picker.
+  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    input.capture = 'environment';
+  }
   input.onchange = function() {
     if (input.files && input.files[0]) uploadTaskPhoto(taskId, input.files[0]);
   };
+  // Must append to DOM for iOS Safari to fire reliably
+  document.body.appendChild(input);
   input.click();
+  setTimeout(function() {
+    if (input.parentNode) input.parentNode.removeChild(input);
+  }, 5000);
 }
 
 async function uploadTaskPhoto(taskId, file) {
@@ -4289,6 +4295,174 @@ function checkPin() {
     window._pendingPin = null;
   };
 })();
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROLLING 3-MONTH AUTO-POPULATE
+// For every recurring task, ensure occurrences exist exactly 3 months ahead
+// of today. Runs on load and daily. When a new date crosses into range, that
+// occurrence is created and written to Supabase.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Days between occurrences for each frequency
+var FREQ_DAYS = {
+  daily:      1,
+  weekly:     7,
+  biweekly:  14,
+  monthly:   null, // handled separately
+  quarterly: null,
+  yearly:    null
+};
+
+// Returns the next occurrence date after `fromDate` for a given frequency
+function nextOccurrenceAfter(fromDate, freq) {
+  var d = new Date(fromDate);
+  switch(freq) {
+    case 'daily':     d.setDate(d.getDate() + 1); break;
+    case 'weekly':    d.setDate(d.getDate() + 7); break;
+    case 'biweekly':  d.setDate(d.getDate() + 14); break;
+    case 'monthly':   d.setMonth(d.getMonth() + 1); break;
+    case 'quarterly': d.setMonth(d.getMonth() + 3); break;
+    case 'yearly':    d.setFullYear(d.getFullYear() + 1); break;
+    default: return null;
+  }
+  return d;
+}
+
+// The horizon date is exactly 3 months from today
+function getHorizonDate() {
+  var h = new Date(TODAY_Y, TODAY_M, TODAY_D);
+  h.setMonth(h.getMonth() + 3);
+  return h;
+}
+
+// Returns true if a task occurrence already exists on a given date
+function occurrenceExists(templateTask, day, month, year) {
+  return tasks.some(function(t) {
+    return t.name === templateTask.name &&
+           t.freq === templateTask.freq &&
+           t.cat  === templateTask.cat  &&
+           t.day === day && t.month === month && t.year === year;
+  });
+}
+
+// For a single recurring task, find its latest scheduled occurrence
+// and generate any missing ones up to the 3-month horizon
+function populateRecurring(task, horizon, toInsert) {
+  if (!task.freq || task.freq === 'custom') return;
+
+  // Find all existing occurrences of this task (same name+freq+cat)
+  var siblings = tasks.filter(function(t) {
+    return t.name === task.name && t.freq === task.freq && t.cat === task.cat;
+  }).sort(function(a, b) {
+    return new Date(a.year, a.month, a.day) - new Date(b.year, b.month, b.day);
+  });
+
+  if (!siblings.length) return;
+  var latest = siblings[siblings.length - 1];
+  var latestDate = new Date(latest.year, latest.month, latest.day);
+
+  // Walk forward from latest until we've covered the horizon
+  var cur = latestDate;
+  var safety = 0;
+  while (safety++ < 500) {
+    var next = nextOccurrenceAfter(cur, task.freq);
+    if (!next) break;
+    if (next > horizon) break;
+    var nd = next.getDate(), nm = next.getMonth(), ny = next.getFullYear();
+    if (!occurrenceExists(task, nd, nm, ny)) {
+      var newTask = {
+        id:            nextId++,
+        name:          task.name,
+        freq:          task.freq,
+        cat:           task.cat,
+        day:           nd,
+        month:         nm,
+        year:          ny,
+        done:          false,
+        assignId:      task.assignId || 0,
+        summary:       task.summary  || '',
+        steps:         task.steps    || '',
+        customPattern: task.customPattern || ''
+      };
+      tasks.push(newTask);
+      toInsert.push(newTask);
+    }
+    cur = next;
+  }
+}
+
+async function autoPopulateAll() {
+  var horizon   = getHorizonDate();
+  var toInsert  = [];
+
+  // Deduplicate by name+freq+cat — only process each unique task template once
+  var seen = {};
+  tasks.slice().forEach(function(task) {
+    if (!task.freq || task.freq === 'custom') return;
+    var key = task.name + '||' + task.freq + '||' + task.cat;
+    if (seen[key]) return;
+    seen[key] = true;
+    populateRecurring(task, horizon, toInsert);
+  });
+
+  if (toInsert.length === 0) return;
+  console.log('[autopop] Adding', toInsert.length, 'occurrences up to', horizon.toDateString());
+
+  // Re-render with new tasks
+  renderCal(); updateStats();
+
+  // Write all new occurrences to Supabase in one batch
+  if (sbReady && toInsert.length > 0) {
+    var rows = toInsert.map(function(t) {
+      return {
+        name:      t.name,
+        freq:      t.freq,
+        cat:       t.cat,
+        day:       t.day,
+        month:     t.month,
+        year:      t.year,
+        done:      false,
+        assign_id: t.assignId || 0,
+        summary:   t.summary  || '',
+        steps:     t.steps    || ''
+      };
+    });
+    sbWrite('Auto-populate occurrences', async function() {
+      // Insert in batches of 20 to avoid URL length limits
+      for (var i = 0; i < rows.length; i += 20) {
+        var batch = rows.slice(i, i + 20);
+        await sbPost('tasks', batch);
+      }
+    });
+  }
+}
+
+// Run auto-populate after init, then check daily
+// Uses a date stamp in localStorage to avoid re-running multiple times per day
+var _lastAutoPopDate = '';
+function scheduleAutoPopulate() {
+  var today = TODAY_Y + '-' + TODAY_M + '-' + TODAY_D;
+  var lastRun = localStorage.getItem('cfa_autopop_date');
+  if (lastRun !== today) {
+    // New day (or first run) — populate now
+    setTimeout(function() {
+      autoPopulateAll().then(function() {
+        localStorage.setItem('cfa_autopop_date', today);
+      });
+    }, 1000); // slight delay so Supabase data is loaded first
+  }
+  // Also schedule a check every hour in case the app stays open overnight
+  setInterval(function() {
+    var newDay = TODAY_Y + '-' + TODAY_M + '-' + TODAY_D;
+    if (newDay !== today) {
+      today = newDay;
+      autoPopulateAll().then(function() {
+        localStorage.setItem('cfa_autopop_date', today);
+      });
+    }
+  }, 3600000); // 1 hour
+}
 
 
 </script>
