@@ -727,11 +727,25 @@ body {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
   z-index: 150;
   box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+  /* Use flex column so safe-area padding fills cleanly with no dot artifact */
+  flex-direction: column;
+  align-items: stretch;
 }
-.bottom-nav-items { display: flex; height: var(--bottom-nav-h); }
+.bottom-nav-items {
+  display: flex;
+  height: var(--bottom-nav-h);
+  flex-shrink: 0;
+}
+/* Safe area spacer — fills the home indicator zone with nav background color */
+.bottom-nav::after {
+  content: '';
+  display: block;
+  height: env(safe-area-inset-bottom, 0px);
+  background: var(--surface);
+  flex-shrink: 0;
+}
 .bottom-nav-item {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -852,6 +866,24 @@ body {
   .modal { border-radius: 12px; position: relative; bottom: auto; left: auto; right: auto; padding: 24px; }
 }
 
+/* ── LANDSCAPE PHONE: even if narrow, use sidebar layout when rotated ── */
+@media (max-width: 767px) and (orientation: landscape) {
+  .bottom-nav   { display: none !important; }
+  .stats-strip  { display: none !important; }
+  .nav-stats    { display: flex; }
+  .sidebar {
+    display: flex !important;
+    transform: translateX(0) !important;
+    position: relative !important;
+    inset: auto !important;
+    box-shadow: none !important;
+    width: 220px !important;
+  }
+  .sidebar-scrim { display: none !important; }
+  .day-panel { display: flex !important; }
+  .scrollable-view { padding-bottom: 16px; }
+}
+
 /* ── MOBILE < 768px ── */
 @media (max-width: 767px) {
   :root {
@@ -869,7 +901,7 @@ body {
   .stats-strip { display: flex; }
 
   /* Bottom nav */
-  .bottom-nav { display: block; }
+  .bottom-nav { display: flex; }
 
   /* Sidebar hidden on mobile (overlay mode) */
   .sidebar {
@@ -895,7 +927,7 @@ body {
   .app-body { padding-bottom: 0; }
   .scrollable-view {
     padding: 14px;
-    padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 16px);
+    padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 24px);
   }
 
   /* Cal toolbar compact */
@@ -928,7 +960,7 @@ body {
   .today-strip { display: none; }
 
   /* Toast above bottom nav */
-  .toast { bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 16px); }
+  .toast { bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 20px); }
 }
 
 /* ── COMPACT MOBILE < 480px ── */
@@ -1008,7 +1040,7 @@ body {
 /* Pending-writes badge */
 .queue-badge {
   display:none; position:fixed;
-  bottom:calc(var(--bottom-nav-h) + 10px + env(safe-area-inset-bottom));
+  bottom:calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 10px);
   right:14px; z-index:800;
   background:var(--amber); color:white; border-radius:12px;
   font-size:11px; font-weight:600; padding:5px 12px;
@@ -1214,6 +1246,39 @@ body {
   text-align: center;
 }
 
+/* ── INSTRUCTIONS FULL-SCREEN VIEW ───────────────────────── */
+.instr-view {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg); display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.instr-view.open { transform: translateX(0); }
+.instr-view-hdr {
+  display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+  background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+.instr-back-btn { background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2);padding:4px 8px 4px 0;line-height:1;min-width:36px;min-height:44px;display:flex;align-items:center; }
+.instr-view-title { font-size:17px;font-weight:600;color:var(--text);flex:1;line-height:1.3; }
+.instr-view-cat { font-size:11px;font-weight:500;padding:3px 8px;border-radius:4px;flex-shrink:0; }
+.instr-edit-btn { background:none;border:1px solid var(--border-md);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--text2);cursor:pointer;font-family:var(--font-body);min-height:36px; }
+.instr-edit-btn:hover { background:var(--bg2); }
+.instr-view-body { flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px)); }
+.instr-section-lbl { font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px;margin-top:24px; }
+.instr-section-lbl:first-child { margin-top:0; }
+.instr-summary-box { background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:15px;color:var(--text2);line-height:1.65; }
+.instr-step-row { display:flex;gap:14px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--border); }
+.instr-step-row:last-child { border-bottom:none; }
+.instr-step-num { width:30px;height:30px;border-radius:50%;background:var(--red);color:white;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px; }
+.instr-step-text { font-size:15px;color:var(--text);line-height:1.55;flex:1; }
+.instr-media-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:4px; }
+.instr-media-item { border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--bg2);aspect-ratio:4/3;cursor:pointer;position:relative; }
+.instr-media-item img,.instr-media-item video { width:100%;height:100%;object-fit:cover; }
+.instr-media-del { position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:white;border:none;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center; }
+.instr-upload-btn { display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;border:2px dashed var(--border-md);border-radius:10px;background:var(--bg);color:var(--text3);font-size:14px;font-weight:500;cursor:pointer;margin-top:4px;font-family:var(--font-body);transition:all .15s; }
+.instr-upload-btn:hover { border-color:var(--red);color:var(--red); }
+
 </style>
 </head>
 <body>
@@ -1361,7 +1426,7 @@ body {
         <div class="manage-card-body" id="manageUpcoming"></div>
       </div>
       <div class="manage-card">
-        <div class="manage-card-hdr"><div style="font-size:18px;">🗑️</div><div><div class="manage-card-title" data-i18n="delete_tasks">Delete Tasks</div><div class="manage-card-sub" data-i18n="delete_sub">Remove from calendar permanently</div></div></div>
+        <div class="manage-card-hdr"><div style="font-size:18px;">📝</div><div><div class="manage-card-title">All Tasks</div><div class="manage-card-sub">Edit or delete any task</div></div></div>
         <div class="manage-card-body" id="manageDelete"></div>
       </div>
     </div>
@@ -1645,6 +1710,17 @@ body {
     </div>
     <div class="sheet-scroll" id="statSheetList"></div>
   </div>
+</div>
+
+<!-- INSTRUCTIONS FULL-SCREEN VIEW -->
+<div class="instr-view" id="instrView">
+  <div class="instr-view-hdr">
+    <button class="instr-back-btn" onclick="closeInstrView()">←</button>
+    <div class="instr-view-title" id="instrViewTitle"></div>
+    <span class="instr-view-cat" id="instrViewCat"></span>
+    <button class="instr-edit-btn" id="instrEditBtn" onclick="openEditFromInstr()">✏️ Edit</button>
+  </div>
+  <div class="instr-view-body" id="instrViewBody"></div>
 </div>
 
 <!-- Photo lightbox -->
@@ -2126,54 +2202,27 @@ function highlightDayPanelTask(taskId) {
 }
 
 function taskCardHTML(task) {
-  const c = CAT[task.cat];
-  const hasInstructions = task.summary || task.steps;
+  const c = CAT[task.cat] || CAT.equipment;
   const tid = String(task.id);
   const doneLabel = task.done ? '↩ Mark Incomplete' : '✓ Complete';
-  const doneCls   = task.done ? 'style="color:var(--text3);border-color:var(--border-md);"' : 'style="color:var(--green);border-color:#81C995;background:var(--green-light);font-weight:600;"';
+  const doneCls = task.done ? 'style="color:var(--text3);border-color:var(--border-md);"' : 'style="color:var(--green);border-color:#81C995;background:var(--green-light);font-weight:600;"';
+  const hasInstr = task.summary || task.steps;
   return `<div class="day-task-item${task.done?' done':''}" style="background:${c.bg};border-color:${task.done?c.border:'transparent'};" data-tid="${tid}">
     <div style="display:flex;align-items:flex-start;gap:8px;">
       <div class="day-task-checkbox" data-action="toggle" data-tid="${tid}">${task.done?'<svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4l2 2L6.5 2" stroke="#188038" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}</div>
       <div style="flex:1;min-width:0;">
         <div class="day-task-name" style="color:${c.text};">${task.name}</div>
         <div class="day-task-meta">${task.freq==='custom'&&task.customPattern?task.customPattern:FREQ(task.freq)}${getUserName(task.assignId)?' · '+getUserName(task.assignId):''}</div>
+        ${task.summary?`<div style="font-size:12.5px;color:var(--text3);margin-top:3px;line-height:1.45;">${task.summary}</div>`:''}
       </div>
       <span class="cat-pill" style="background:${c.bg};color:${c.text};border:1px solid ${c.border};font-size:10px;">${catLabel(task.cat)}</span>
     </div>
-    ${hasInstructions?`
-    <div style="margin-top:8px;">
-      <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" data-action="instructions" data-tid="${tid}">
-        📋 <span class="instr-btn-label">${t('show_steps')}</span>
-      </button>
-      <div class="task-instructions-wrap instr-wrap">
-        <div class="instructions-content">
-          ${task.summary?`<div class="instructions-summary"><strong>${t('show_summary')}:</strong> ${task.summary}</div>${task.steps?'<hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:8px 0;">':''}`:''}
-          ${task.steps?task.steps.split('\n').filter(s=>s.trim()).map((s,i)=>{
-            const colonIdx=s.indexOf(':');
-            const stepText=colonIdx>-1?s.slice(colonIdx+1).trim():s;
-            return `<div class="instructions-step"><div class="instructions-step-num">${i+1}</div><div class="instructions-step-text">${stepText}</div></div>`;
-          }).join(''):''}
-        </div>
-      </div>
-    </div>`:''}
-    <div class="photo-area" style="margin-top:8px;" data-tid="${tid}">
-      ${task._photoUrl
-        ? `<div class="task-photo-wrap">
-             <img class="task-photo-img" src="${task._photoUrl}" alt="Task photo" data-action="viewphoto" data-url="${task._photoUrl}" data-tid="${tid}">
-             <div class="task-photo-actions">
-               <button class="task-photo-btn" data-action="viewphoto" data-url="${task._photoUrl}" data-tid="${tid}">🔍 View full</button>
-               <button class="task-photo-btn" data-action="photo" data-tid="${tid}">🔄 Replace</button>
-               <button class="task-photo-btn danger" data-action="deletephoto" data-tid="${tid}">🗑 Remove</button>
-             </div>
-           </div>`
-        : `<button class="task-photo-upload-btn" data-action="photo" data-tid="${tid}">📷 Add photo</button>`
-      }
-    </div>
-    <div class="day-task-actions" style="margin-top:8px;">
+    <div class="day-task-actions" style="margin-top:10px;flex-wrap:wrap;gap:6px;">
       <button class="task-instructions-btn" ${doneCls} data-action="toggle" data-tid="${tid}">${doneLabel}</button>
       <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" data-action="edit" data-tid="${tid}">✏️ Edit</button>
-      <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" data-action="resched" data-tid="${tid}">📅 Reschedule</button>
-      <button class="task-instructions-btn" style="color:var(--red);border-color:var(--red-mid);background:var(--red-light);" data-action="delete" data-tid="${tid}">🗑 Delete</button>
+      <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" data-action="resched" data-tid="${tid}">?? Resched</button>
+      ${hasInstr?`<button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" data-action="openinstr" data-tid="${tid}">📋 Steps</button>`:''}
+      <button class="task-instructions-btn" style="color:var(--red);border-color:var(--red-mid);background:var(--red-light);" data-action="delete" data-tid="${tid}">🗑</button>
     </div>
   </div>`;
 }
@@ -2289,8 +2338,43 @@ function setCatFilter(cat,btn){
 // ── MANAGE ────────────────────────────────────────────────────────────────────
 function renderManage(){
   const upcoming=tasks.filter(t=>!t.done).sort((a,b)=>new Date(a.year,a.month,a.day)-new Date(b.year,b.month,b.day));
-  document.getElementById('manageUpcoming').innerHTML=upcoming.length?upcoming.map(task=>{const c=CAT[task.cat];return`<div class="manage-task-row"><div class="cat-dot" style="background:${c.dot};border-radius:3px;"></div><div class="manage-task-name">${task.name}</div><div class="manage-task-date">${MONTHS()[task.month].slice(0,3)} ${task.day}</div><button class="btn-amber" onclick="openReschedModal(${task.id})">${t('reschedule')}</button></div>`;}).join(''):`<div class="no-tasks">${t('all')}</div>`;
-  document.getElementById('manageDelete').innerHTML=tasks.map(task=>{const c=CAT[task.cat];return`<div class="manage-task-row"><div class="cat-dot" style="background:${c.dot};border-radius:3px;"></div><div class="manage-task-name">${task.name}</div><span class="cat-pill" style="background:${c.bg};color:${c.text};font-size:10px;">${task.cat}</span><button class="btn-danger" onclick="confirmDelete(${task.id})">Delete</button></div>`;}).join('');
+  const upEl=document.getElementById('manageUpcoming');
+  upEl.innerHTML=upcoming.length?upcoming.map(task=>{
+    const c=CAT[task.cat]||CAT.equipment;
+    return `<div class="manage-task-row" style="flex-wrap:wrap;gap:6px;padding:10px 0;">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+        <div class="cat-dot" style="background:${c.dot};border-radius:3px;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="manage-task-name">${task.name}</div>
+          <div style="font-size:11px;color:var(--text3);">${MONTHS()[task.month].slice(0,3)} ${task.day} · ${catLabel(task.cat)}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="openEditModal(${task.id})">✏️ Edit</button>
+        <button class="btn-amber" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="openReschedModal(${task.id})">📅 Resched</button>
+        ${(task.summary||task.steps)?`<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="openInstrView(${task.id})">📋 Steps</button>`:''}
+      </div>
+    </div>`;
+  }).join(''):`<div class="no-tasks">All tasks complete 🎉</div>`;
+
+  const allEl=document.getElementById('manageDelete');
+  const sorted=tasks.slice().sort((a,b)=>new Date(a.year,a.month,a.day)-new Date(b.year,b.month,b.day));
+  allEl.innerHTML=sorted.map(task=>{
+    const c=CAT[task.cat]||CAT.equipment;
+    return `<div class="manage-task-row" style="flex-wrap:wrap;gap:6px;padding:10px 0;${task.done?'opacity:0.55;':''}">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+        <div class="cat-dot" style="background:${c.dot};border-radius:3px;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="manage-task-name">${task.name}</div>
+          <div style="font-size:11px;color:var(--text3);">${MONTHS()[task.month].slice(0,3)} ${task.day} · ${FREQ(task.freq)} · ${catLabel(task.cat)}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="openEditModal(${task.id})">✏️ Edit</button>
+        <button class="btn-danger" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="confirmDelete(${task.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── USERS ─────────────────────────────────────────────────────────────────────
@@ -3018,6 +3102,9 @@ function handleTaskAction(e) {
     case 'viewphoto':
       if (url) openPhotoLightbox(url);
       break;
+    case 'openinstr':
+      openInstrView(tid);
+      break;
   }
 }
 
@@ -3028,6 +3115,22 @@ document.addEventListener('DOMContentLoaded', function() {
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', handleTaskAction);
   });
+  // Media click delegation in instructions view
+  var instrBody = document.getElementById('instrViewBody');
+  if (instrBody) {
+    instrBody.addEventListener('click', function(e) {
+      var el = e.target.closest('[data-mediaurl]');
+      if (!el) return;
+      e.stopPropagation();
+      var url    = decodeURIComponent(el.getAttribute('data-mediaurl'));
+      var taskId = el.getAttribute('data-taskid');
+      if (el.getAttribute('data-action') === 'deletemedia') {
+        deleteInstrMedia(url, taskId);
+      } else {
+        openPhotoLightbox(url);
+      }
+    });
+  }
 });
 
 // ── Day panel: mobile bottom sheet ──────────────────────
@@ -3361,7 +3464,8 @@ function dbToTask(r) {
     assignId:      Number(r.assign_id) || 0,
     summary:       r.summary        || '',
     steps:         r.steps          || '',
-    customPattern: r.custom_pattern || r.history || ''
+    customPattern: r.custom_pattern || r.history || '',
+    _mediaUrls:    r.media_urls || null
   };
 }
 
@@ -4601,6 +4705,230 @@ async function saveRemoteSetting(key, value) {
     };
   }
 })();
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INSTRUCTIONS FULL-SCREEN VIEW
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var _instrTaskId = null;
+
+function openInstrView(taskId) {
+  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
+  if (!task) return;
+  _instrTaskId = String(taskId);
+
+  var c = CAT[task.cat] || CAT.equipment;
+
+  // Header
+  document.getElementById('instrViewTitle').textContent = task.name;
+  var catEl = document.getElementById('instrViewCat');
+  catEl.textContent = catLabel(task.cat);
+  catEl.style.background = c.bg;
+  catEl.style.color = c.text;
+
+  // Body
+  renderInstrBody(task);
+
+  // Open with slide animation
+  document.getElementById('instrView').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeInstrView() {
+  document.getElementById('instrView').classList.remove('open');
+  document.body.style.overflow = '';
+  _instrTaskId = null;
+}
+
+function openEditFromInstr() {
+  if (!_instrTaskId) return;
+  closeInstrView();
+  setTimeout(function() { openEditModal(_instrTaskId); }, 300);
+}
+
+function renderInstrBody(task) {
+  var body = document.getElementById('instrViewBody');
+  if (!body) return;
+  var html = '';
+
+  // Summary
+  if (task.summary) {
+    html += '<div class="instr-section-lbl">Summary</div>';
+    html += '<div class="instr-summary-box">' + escapeHtml(task.summary) + '</div>';
+  }
+
+  // Step-by-step
+  if (task.steps) {
+    html += '<div class="instr-section-lbl">Step-by-Step</div>';
+    var steps = task.steps.split('\n').filter(function(s) { return s.trim(); });
+    steps.forEach(function(s, i) {
+      var colonIdx = s.indexOf(':');
+      var text = colonIdx > -1 ? s.slice(colonIdx + 1).trim() : s.trim();
+      html += '<div class="instr-step-row">'
+        + '<div class="instr-step-num">' + (i + 1) + '</div>'
+        + '<div class="instr-step-text">' + escapeHtml(text) + '</div>'
+        + '</div>';
+    });
+  }
+
+  // Media (photos + videos)
+  html += '<div class="instr-section-lbl">Photos & Video</div>';
+  var media = getTaskMedia(task);
+  if (media.length > 0) {
+    html += '<div class="instr-media-grid">';
+    media.forEach(function(m) {
+      var isVideo = m.url.match(/\.(mp4|mov|webm|m4v)/i);
+      var safeUrl = encodeURIComponent(m.url);
+      html += '<div class="instr-media-item" data-mediaurl="' + safeUrl + '" data-taskid="' + String(task.id) + '">';
+      if (isVideo) {
+        html += '<video src="' + m.url + '" preload="metadata" muted playsinline></video>';
+      } else {
+        html += '<img src="' + m.url + '" alt="media">';
+      }
+      html += '<button class="instr-media-del" data-action="deletemedia" data-mediaurl="' + safeUrl + '" data-taskid="' + String(task.id) + '">×</button>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Upload button — camera + file options
+  html += '<button class="instr-upload-btn" id="instrUploadBtn" onclick="triggerInstrUpload(' + String(task.id) + ')" style="margin-top:' + (media.length > 0 ? '10px' : '0') + ';">'
+    + '<span style="font-size:18px;">📷</span> Add photo or video'
+    + '</button>';
+  html += '<div id="instrUploadStatus" style="margin-top:6px;"></div>';
+
+  body.innerHTML = html;
+}
+
+// Get all media URLs for a task (photo_url + any additional media stored in media_urls)
+function getTaskMedia(task) {
+  var media = [];
+  if (task._photoUrl) media.push({ url: task._photoUrl });
+  if (task._mediaUrls) {
+    try {
+      var extra = typeof task._mediaUrls === 'string' ? JSON.parse(task._mediaUrls) : task._mediaUrls;
+      if (Array.isArray(extra)) {
+        extra.forEach(function(u) {
+          if (u && u !== task._photoUrl) media.push({ url: u });
+        });
+      }
+    } catch(e) {}
+  }
+  return media;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Upload photo or video from instructions view
+function triggerInstrUpload(taskId) {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,video/*';
+  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    input.capture = 'environment';
+  }
+  input.onchange = function() {
+    if (input.files && input.files[0]) uploadInstrMedia(taskId, input.files[0]);
+  };
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(function() { if (input.parentNode) input.parentNode.removeChild(input); }, 5000);
+}
+
+async function uploadInstrMedia(taskId, file) {
+  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
+  if (!task) return;
+
+  var statusEl = document.getElementById('instrUploadStatus');
+  if (statusEl) statusEl.innerHTML = '<div class="instr-uploading">⏳ Uploading...</div>';
+
+  var isVideo = file.type.startsWith('video/');
+  var maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    showToast('File too large (max ' + (isVideo ? '100MB video' : '10MB image') + ')', 'error');
+    if (statusEl) statusEl.innerHTML = '';
+    return;
+  }
+
+  try {
+    var ext  = file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg');
+    var path = taskId + '/' + Date.now() + '.' + ext;
+
+    var uploadRes = await fetch(SB_STORAGE_URL + '/object/task-photos/' + path, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': file.type, 'Cache-Control': '3600', 'x-upsert': 'true'
+      },
+      body: file
+    });
+
+    if (!uploadRes.ok) throw new Error('Upload HTTP ' + uploadRes.status);
+
+    var publicUrl = 'https://cjgoaufrfhsndfirkdxt.supabase.co/storage/v1/object/public/task-photos/' + path;
+
+    // First photo goes to photo_url, additional go to media_urls array
+    if (!task._photoUrl) {
+      task._photoUrl = publicUrl;
+      if (sbReady) sbWrite('Save photo', function() { return sbPatch('tasks?id=eq.' + taskId, { photo_url: publicUrl }); });
+    } else {
+      var existing = [];
+      try { existing = task._mediaUrls ? JSON.parse(task._mediaUrls) : []; } catch(e) {}
+      existing.push(publicUrl);
+      task._mediaUrls = JSON.stringify(existing);
+      if (sbReady) sbWrite('Save media', function() { return sbPatch('tasks?id=eq.' + taskId, { media_urls: task._mediaUrls }); });
+    }
+
+    if (statusEl) statusEl.innerHTML = '';
+    renderInstrBody(task);
+    showToast('Media uploaded', 'success');
+
+  } catch(err) {
+    console.error('[instr upload]', err.message);
+    if (statusEl) statusEl.innerHTML = '';
+    showToast('Upload failed: ' + err.message, 'error');
+  }
+}
+
+async function deleteInstrMedia(url, taskId) {
+  if (!confirm('Remove this photo/video?')) return;
+  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
+  if (!task) return;
+
+  var path = url.split('/task-photos/')[1];
+
+  // Remove from task object
+  if (task._photoUrl === url) {
+    task._photoUrl = null;
+    if (sbReady) sbWrite('Clear photo', function() { return sbPatch('tasks?id=eq.' + taskId, { photo_url: null }); });
+  } else {
+    try {
+      var arr = task._mediaUrls ? JSON.parse(task._mediaUrls) : [];
+      arr = arr.filter(function(u) { return u !== url; });
+      task._mediaUrls = JSON.stringify(arr);
+      if (sbReady) sbWrite('Update media', function() { return sbPatch('tasks?id=eq.' + taskId, { media_urls: task._mediaUrls }); });
+    } catch(e) {}
+  }
+
+  // Delete from storage
+  try {
+    await fetch(SB_STORAGE_URL + '/object/task-photos/' + path, {
+      method: 'DELETE',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+  } catch(e) { console.warn('Storage delete:', e.message); }
+
+  renderInstrBody(task);
+  showToast('Removed', '');
+}
 
 
 </script>
