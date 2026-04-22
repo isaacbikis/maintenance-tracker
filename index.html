@@ -1272,7 +1272,6 @@ body {
 <aside class="sidebar" id="sidebar">
   <div style="padding:4px 8px;">
     <button class="sidebar-item active" id="nav-calendar" onclick="switchView('calendar')"><span class="si-icon">📅</span><span data-i18n="calendar">Calendar</span><span class="si-badge" id="badge-today">0</span></button>
-    <button class="sidebar-item" id="nav-tasks" onclick="switchView('tasks')"><span class="si-icon">📋</span><span data-i18n="all_tasks">All Tasks</span></button>
     <button class="sidebar-item" id="nav-manage" onclick="switchView('manage')"><span class="si-icon">✏️</span><span data-i18n="manage_tasks">Manage Tasks</span></button>
     <button class="sidebar-item" id="nav-upload" onclick="switchView('upload')"><span class="si-icon">📂</span><span data-i18n="upload_manual">Upload Manual</span></button>
     <button class="sidebar-item" id="nav-users" onclick="switchView('users')"><span class="si-icon">👥</span><span data-i18n="team_members">Team Members</span></button>
@@ -1280,15 +1279,7 @@ body {
     <button class="sidebar-item" id="nav-settings" onclick="switchView('settings')"><span class="si-icon">⚙️</span><span data-i18n="settings">Settings</span></button>
   </div>
   <div class="sidebar-divider"></div>
-  <div class="cat-legend">
-    <div class="sidebar-label" data-i18n="categories">Categories</div>
-    <div class="cat-dot-row"><div class="cat-dot" style="background:#E4002B;"></div><span data-i18n="cat_fryer">Fryer</span></div>
-    <div class="cat-dot-row"><div class="cat-dot" style="background:#3A8ADD;"></div><span data-i18n="cat_ice">Ice / Drink</span></div>
-    <div class="cat-dot-row"><div class="cat-dot" style="background:#188038;"></div><span data-i18n="cat_hvac">HVAC</span></div>
-    <div class="cat-dot-row"><div class="cat-dot" style="background:#E37400;"></div><span data-i18n="cat_cleaning">Cleaning</span></div>
-    <div class="cat-dot-row"><div class="cat-dot" style="background:#8A8880;"></div><span data-i18n="cat_equipment">Equipment</span></div>
-    <div class="cat-dot-row"><div class="cat-dot" style="background:#D4537E;"></div><span data-i18n="cat_safety">Safety</span></div>
-  </div>
+  <div class="cat-legend" id="catLegend"></div>
 </aside>
 <div class="sidebar-scrim" id="sidebarScrim" onclick="closeMobileSidebar()"></div>
 
@@ -1355,35 +1346,7 @@ body {
 </div>
 
 <!-- ALL TASKS VIEW -->
-<div class="view" id="view-tasks">
-  <div class="scrollable-view">
-    <div class="section-hdr">
-      <div><div class="section-title" data-i18n="all_tasks">All Tasks</div><div class="section-sub" data-i18n="all_tasks_sub">Filter and review every maintenance item</div></div>
-      <button class="btn-primary" onclick="openAddModal()" data-i18n="add_task">+ Add Task</button>
-    </div>
-    <div class="task-list-filters">
-      <button class="filter-btn active" onclick="setFilter('all',this)" data-i18n="all">All</button>
-      <button class="filter-btn" onclick="setFilter('pending',this)" data-i18n="pending">Pending</button>
-      <button class="filter-btn" onclick="setFilter('done',this)" data-i18n="completed">Completed</button>
-      <button class="filter-btn cat-filter" onclick="setCatFilter('fryer',this)" data-i18n="cat_fryer">Fryer</button>
-      <button class="filter-btn cat-filter" onclick="setCatFilter('ice',this)" data-i18n="cat_ice">Ice/Drink</button>
-      <button class="filter-btn cat-filter" onclick="setCatFilter('hvac',this)" data-i18n="cat_hvac">HVAC</button>
-      <button class="filter-btn cat-filter" onclick="setCatFilter('cleaning',this)" data-i18n="cat_cleaning">Cleaning</button>
-      <button class="filter-btn cat-filter" onclick="setCatFilter('equipment',this)" data-i18n="cat_equipment">Equipment</button>
-      <button class="filter-btn cat-filter" onclick="setCatFilter('safety',this)" data-i18n="cat_safety">Safety</button>
-    </div>
-    <div class="task-table">
-      <div class="task-table-hdr">
-        <div class="task-table-hdr-cell" data-i18n="task">Task</div>
-        <div class="task-table-hdr-cell" data-i18n="category">Category</div>
-        <div class="task-table-hdr-cell" data-i18n="frequency">Frequency</div>
-        <div class="task-table-hdr-cell" data-i18n="next_due">Next Due</div>
-        <div class="task-table-hdr-cell" data-i18n="actions">Actions</div>
-      </div>
-      <div id="taskTableBody"></div>
-    </div>
-  </div>
-</div>
+
 
 <!-- MANAGE VIEW -->
 <div class="view" id="view-manage">
@@ -1491,6 +1454,16 @@ body {
       </div>
     </div>
     <div class="settings-card">
+      <div class="settings-card-hdr"><div class="settings-icon" style="background:#FFF3E0;">🏷️</div><div><div class="settings-title">Task Categories</div><div class="settings-sub">Add, rename, or remove categories. Deleting a category hides it from new tasks.</div></div></div>
+      <div class="settings-body">
+        <div id="catEditorList" style="margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="form-input" id="newCatName" type="text" placeholder="New category name…" style="flex:1;" maxlength="24">
+          <button class="btn-primary" style="min-height:48px;padding:0 16px;white-space:nowrap;" onclick="addCategory()">+ Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="settings-card">
       <div class="settings-card-hdr"><div class="settings-icon" style="background:#E6F4EA;">🏪</div><div><div class="settings-title" data-i18n="store_info">Store Information</div><div class="settings-sub" data-i18n="store_sub">Details shown in the header</div></div></div>
       <div class="settings-body">
         <div class="form-2col" style="margin-bottom:12px;">
@@ -1518,15 +1491,7 @@ body {
         <button class="btn-ghost" style="padding:7px 12px;font-size:12px;min-height:36px;" onclick="loadCompletionHistory()">↻ Refresh</button>
       </div>
     </div>
-    <div class="hist-filters" id="historyFilters">
-      <button class="filter-btn active" onclick="filterHistory('all',this)">All</button>
-      <button class="filter-btn" onclick="filterHistory('fryer',this)">🔴 Fryer</button>
-      <button class="filter-btn" onclick="filterHistory('ice',this)">🔵 Ice/Drink</button>
-      <button class="filter-btn" onclick="filterHistory('hvac',this)">🟢 HVAC</button>
-      <button class="filter-btn" onclick="filterHistory('cleaning',this)">🟡 Cleaning</button>
-      <button class="filter-btn" onclick="filterHistory('equipment',this)">⚪ Equipment</button>
-      <button class="filter-btn" onclick="filterHistory('safety',this)">🩷 Safety</button>
-    </div>
+    <div class="hist-filters" id="historyFilters"></div>
     <div id="historyList" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;"></div>
   </div>
 </div>
@@ -1538,7 +1503,6 @@ body {
 <nav class="bottom-nav">
   <div class="bottom-nav-items">
     <button class="bottom-nav-item active" id="mnav-calendar" onclick="switchView('calendar')"><span class="bni-icon">📅</span><span class="bni-label" data-i18n="calendar">Calendar</span></button>
-    <button class="bottom-nav-item" id="mnav-tasks" onclick="switchView('tasks')"><span class="bni-icon">📋</span><span class="bni-label" data-i18n="all_tasks">Tasks</span></button>
     <button class="bottom-nav-item" id="mnav-manage" onclick="switchView('manage')"><span class="bni-icon">✏️</span><span class="bni-label" data-i18n="manage_tasks">Manage</span></button>
     <button class="bottom-nav-item" id="mnav-history" onclick="switchView('history')"><span class="bni-icon">📜</span><span class="bni-label">Log</span></button>
     <button class="bottom-nav-item" id="mnav-users" onclick="switchView('users')"><span class="bni-icon">👥</span><span class="bni-label" data-i18n="team_members">Team</span></button>
@@ -1871,7 +1835,6 @@ function setLanguage(l) {
   populateSelects();
   renderCal();
   updateStats();
-  if(document.getElementById('view-tasks').classList.contains('active')) renderTaskTable();
   if(document.getElementById('view-manage').classList.contains('active')) renderManage();
   if(document.getElementById('view-users').classList.contains('active')) { renderUserList(); renderEmailLog(); }
 }
@@ -1886,14 +1849,40 @@ function applyI18n() {
 }
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
-const CAT = {
-  fryer:    {bg:'#FCE8E6',text:'#C5221F',dot:'#E4002B',border:'#F28B82'},
-  ice:      {bg:'#E8F0FE',text:'#1967D2',dot:'#4285F4',border:'#AECBFA'},
-  hvac:     {bg:'#E6F4EA',text:'#137333',dot:'#188038',border:'#81C995'},
-  cleaning: {bg:'#FEF3E2',text:'#B06000',dot:'#E37400',border:'#FDD663'},
-  equipment:{bg:'#F1F3F4',text:'#5F6368',dot:'#8A8880',border:'#DADCE0'},
-  safety:   {bg:'#FCE8F3',text:'#A142A4',dot:'#D4537E',border:'#F6AEE5'}
+// Default categories — user can add/delete/rename via Settings
+var DEFAULT_CATS = {
+  fryer:    {label:'Fryer',    bg:'#FCE8E6',text:'#C5221F',dot:'#E4002B',border:'#F28B82'},
+  ice:      {label:'Ice/Drink',bg:'#E8F0FE',text:'#1967D2',dot:'#4285F4',border:'#AECBFA'},
+  hvac:     {label:'HVAC',     bg:'#E6F4EA',text:'#137333',dot:'#188038',border:'#81C995'},
+  cleaning: {label:'Cleaning', bg:'#FEF3E2',text:'#B06000',dot:'#E37400',border:'#FDD663'},
+  equipment:{label:'Equipment',bg:'#F1F3F4',text:'#5F6368',dot:'#8A8880',border:'#DADCE0'},
+  safety:   {label:'Safety',   bg:'#FCE8F3',text:'#A142A4',dot:'#D4537E',border:'#F6AEE5'}
 };
+
+// Palette of colours to assign new categories (cycles)
+var CAT_PALETTE = [
+  {bg:'#E8F4FD',text:'#0D47A1',dot:'#1565C0',border:'#90CAF9'},
+  {bg:'#FFF8E1',text:'#F57F17',dot:'#F9A825',border:'#FFE082'},
+  {bg:'#F3E5F5',text:'#6A1B9A',dot:'#8E24AA',border:'#CE93D8'},
+  {bg:'#E8F5E9',text:'#1B5E20',dot:'#2E7D32',border:'#A5D6A7'},
+  {bg:'#FCE4EC',text:'#880E4F',dot:'#C2185B',border:'#F48FB1'},
+  {bg:'#E0F2F1',text:'#004D40',dot:'#00695C',border:'#80CBC4'},
+  {bg:'#FBE9E7',text:'#BF360C',dot:'#E64A19',border:'#FFAB91'},
+  {bg:'#E8EAF6',text:'#1A237E',dot:'#283593',border:'#9FA8DA'},
+];
+
+var CAT = loadCats();
+
+function loadCats() {
+  try {
+    var saved = localStorage.getItem('cfa_cats');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_CATS));
+}
+function saveCats() {
+  localStorage.setItem('cfa_cats', JSON.stringify(CAT));
+}
 const FREQ_KEYS = ['daily','weekly','biweekly','monthly','quarterly','yearly','custom'];
 const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -1925,157 +1914,9 @@ let selectedDay=TODAY_D, selectedMonth=TODAY_M, selectedYear=TODAY_Y;
 let selectedDateStr=`${TODAY_Y}-${String(TODAY_M+1).padStart(2,'0')}-${String(TODAY_D).padStart(2,'0')}`;
 let dayPanelOpen=false;
 
-let users=[
-  {id:1,name:'Sarah Martinez',email:'sarah.m@cfadenver.com',role:'lead',shift:'AM',color:'#E4002B'},
-  {id:2,name:'James Thompson',email:'james.t@cfadenver.com',role:'team',shift:'PM',color:'#1967D2'},
-  {id:3,name:'Maria Rodriguez',email:'maria.r@cfadenver.com',role:'manager',shift:'both',color:'#188038'},
-  {id:4,name:'Devon Clark',email:'devon.c@cfadenver.com',role:'team',shift:'AM',color:'#E37400'},
-  {id:5,name:'Ashley Kim',email:'ashley.k@cfadenver.com',role:'lead',shift:'PM',color:'#D4537E'},
-];
+let users=[];
 
-let tasks=[
-  {id:1,name:'Fryer boilout — log & verify all units',freq:'weekly',cat:'fryer',day:1,month:2,year:2026,done:true,assignId:1,
-   summary:'Confirm nightly boilout log is signed for all Henny Penny fryers.',
-   steps:'Step 1: Pull last night\'s boilout log sheet.\nStep 2: Verify each fryer (OFE/PFE/CFE) has a signed entry.\nStep 3: Check oil color and smell — dark/acrid = change early.\nStep 4: Sign off as director and file log.'},
-  {id:2,name:'Fryer boilout — log & verify all units',freq:'weekly',cat:'fryer',day:8,month:2,year:2026,done:true,assignId:1,
-   summary:'Confirm nightly boilout log is signed for all Henny Penny fryers.',
-   steps:'Step 1: Pull last night\'s boilout log sheet.\nStep 2: Verify each fryer (OFE/PFE/CFE) has a signed entry.\nStep 3: Check oil color and smell — dark/acrid = change early.\nStep 4: Sign off as director and file log.'},
-  {id:3,name:'Fryer boilout — log & verify all units',freq:'weekly',cat:'fryer',day:15,month:2,year:2026,done:true,assignId:1,
-   summary:'Confirm nightly boilout log is signed for all Henny Penny fryers.',
-   steps:'Step 1: Pull last night\'s boilout log sheet.\nStep 2: Verify each fryer (OFE/PFE/CFE) has a signed entry.\nStep 3: Check oil color and smell — dark/acrid = change early.\nStep 4: Sign off as director and file log.'},
-  {id:4,name:'Fryer boilout — log & verify all units',freq:'weekly',cat:'fryer',day:22,month:2,year:2026,done:false,assignId:1,
-   summary:'Confirm nightly boilout log is signed for all Henny Penny fryers.',
-   steps:'Step 1: Pull last night\'s boilout log sheet.\nStep 2: Verify each fryer (OFE/PFE/CFE) has a signed entry.\nStep 3: Check oil color and smell — dark/acrid = change early.\nStep 4: Sign off as director and file log.'},
-  {id:5,name:'Fryer lid assembly inspection',freq:'monthly',cat:'fryer',day:3,month:2,year:2026,done:true,assignId:0,
-   summary:'Check lid crossarm, gasket, and latches on all pressure fryers.',
-   steps:'Step 1: Power fryer to standby. Wait for lid to cool.\nStep 2: Inspect crossarm for cracks or bending.\nStep 3: Run finger along gasket — feel for gaps, tears, or hardening.\nStep 4: Test each latch: it should click firmly with no play.\nStep 5: Note any concerns on the maintenance log. Lid issues = Level 2 call.'},
-  {id:6,name:'Fryer controller panel check',freq:'monthly',cat:'fryer',day:3,month:2,year:2026,done:true,assignId:0,
-   summary:'Pull error code history on all fryer controller panels.',
-   steps:'Step 1: Press MENU or ERROR LOG button on each panel.\nStep 2: Screenshot or write down any logged error codes.\nStep 3: Look up codes in Henny Penny service manual if unfamiliar.\nStep 4: If any E or F codes are present, notify director — may need Level 2 service call.'},
-  {id:7,name:'Grease trap service',freq:'monthly',cat:'fryer',day:10,month:2,year:2026,done:true,assignId:0,
-   summary:'Schedule vendor pump-out. File the service report.',
-   steps:'Step 1: Call your licensed grease trap vendor to confirm appointment.\nStep 2: Ensure access to trap is clear before vendor arrives.\nStep 3: Observe or confirm gallons pumped — ask for the manifest.\nStep 4: File the service manifest with your health dept folder. Log date in maintenance record.'},
-  {id:8,name:'Exhaust drip guard filter swap',freq:'monthly',cat:'fryer',day:1,month:2,year:2026,done:true,assignId:0,
-   summary:'Replace the auto-shipped drip guard filter on hood exhaust.',
-   steps:'Step 1: Locate the auto-ship box (should arrive monthly).\nStep 2: Turn off exhaust fan before accessing filter housing.\nStep 3: Remove old filter — wear gloves, it will be greasy.\nStep 4: Insert new filter per orientation arrow.\nStep 5: Restart exhaust fan. Dispose of old filter in grease waste.\nStep 6: Write date on filter housing with marker. Log swap.'},
-  {id:9,name:'Ice machine deep clean & sanitize',freq:'monthly',cat:'ice',day:5,month:2,year:2026,done:true,assignId:2,
-   summary:'Full tear-down clean of Follett/Hoshizaki machines using CFA-approved sanitizer.',
-   steps:'Step 1: Press CLEAN or SANITIZE mode — machine will stop making ice.\nStep 2: Empty ice bin completely.\nStep 3: Remove and scrub auger, sump, and lid with CFA-approved cleaner.\nStep 4: Wipe all interior surfaces. Remove any slime or scale buildup.\nStep 5: Rinse all components thoroughly with clean water.\nStep 6: Reassemble. Run two full ice cycles before returning to service.\nStep 7: Log date, technician name, and sanitizer used.'},
-  {id:10,name:'Ice bin interior inspection',freq:'monthly',cat:'ice',day:5,month:2,year:2026,done:true,assignId:2,
-   summary:'Check bin walls and lid for slime, mold, or bridging.',
-   steps:'Step 1: Empty ice bin.\nStep 2: Using a flashlight, inspect all four walls and the floor for pink or black slime.\nStep 3: Check lid seal for mold or gaps.\nStep 4: Any slime = sanitize immediately per deep clean procedure.\nStep 5: Log condition. If bridging (ice fused at top) is persistent, adjust bin temp — may need Level 2 call.'},
-  {id:11,name:'Ice machine control board inspection',freq:'quarterly',cat:'ice',day:6,month:2,year:2026,done:true,assignId:0,
-   summary:'Check Follett control board for error lights, moisture, or debris.',
-   steps:'Step 1: Locate control board panel (usually behind front access door).\nStep 2: Look for any lit warning LEDs or fault indicators.\nStep 3: Check for moisture, corrosion, or debris on board.\nStep 4: Log findings. Control board is Level 1 FCR — you can replace it. Auger or compressor issues = call Level 2.'},
-  {id:12,name:'CO2 system pressure check',freq:'monthly',cat:'ice',day:6,month:2,year:2026,done:true,assignId:0,
-   summary:'Check bulk CO2 tank pressure and all Carbonizer fittings for leaks.',
-   steps:'Step 1: Read the CO2 tank pressure gauge — should be above 200 PSI when full.\nStep 2: Order refill if below 100 PSI.\nStep 3: Walk all Carbonizer 300/450 line connections. Apply soapy water to fittings — bubbles indicate a leak.\nStep 4: Tighten any loose fittings. If leak persists, tag and call vendor.\nStep 5: Log pressure reading and condition.'},
-  {id:13,name:'HVAC filter replacement — all RTUs',freq:'monthly',cat:'hvac',day:1,month:2,year:2026,done:true,assignId:0,
-   summary:'Swap all rooftop unit filters. Log size and brand.',
-   steps:'Step 1: Access each RTU on the roof (use ladder safely — buddy system required).\nStep 2: Remove old filter. Note the size printed on the frame.\nStep 3: Insert new filter with airflow arrow pointing toward the unit (away from you).\nStep 4: Dispose of old filters in a trash bag — they will be filthy.\nStep 5: Log date, filter size, and brand for each unit.'},
-  {id:14,name:'HVAC smoke detector test & reset',freq:'monthly',cat:'hvac',day:8,month:2,year:2026,done:true,assignId:0,
-   summary:'Test all HVAC-linked smoke detectors. Document pass/fail per unit.',
-   steps:'Step 1: Notify team before testing — alarm will sound briefly.\nStep 2: Press TEST button on each smoke detector linked to HVAC.\nStep 3: Detector should beep and HVAC should shut down — this is correct.\nStep 4: Reset detector. Confirm HVAC restarts normally.\nStep 5: Mark each unit PASS or FAIL on your log. Failed units = replace detector (Level 1 FCR).'},
-  {id:15,name:'HVAC RTU control board inspection',freq:'monthly',cat:'hvac',day:8,month:2,year:2026,done:true,assignId:0,
-   summary:'Inspect RTU boards for error codes, corrosion, or loose wiring.',
-   steps:'Step 1: Access each RTU control board (disconnect power first if opening panel).\nStep 2: Look for fault codes on the digital display.\nStep 3: Check wiring connections — nothing should be loose or burnt.\nStep 4: Look for corrosion or moisture damage on the board surface.\nStep 5: Log findings. General repairs = Level 1. Wiring inside walls or major component = Level 2.'},
-  {id:16,name:'Exhaust fan belt inspection',freq:'monthly',cat:'hvac',day:10,month:2,year:2026,done:true,assignId:0,
-   summary:'Check belt tension and condition on all exhaust fans.',
-   steps:'Step 1: Turn off fan before inspecting (lockout/tagout if possible).\nStep 2: Press belt — it should deflect ~1/2 inch. Too loose or too tight = adjust or replace.\nStep 3: Look for cracking, glazing, or fraying on belt surface.\nStep 4: A frayed belt = replace immediately (Level 1 FCR part). Do not wait.\nStep 5: Log belt condition for each fan.'},
-  {id:17,name:'HVAC full inspection — all units',freq:'quarterly',cat:'hvac',day:6,month:2,year:2026,done:true,assignId:0,
-   summary:'Walk all RTUs: belts, drain pans, coil cleanliness, thermostat calibration.',
-   steps:'Step 1: Access each RTU.\nStep 2: Check drain pan — if full or slimy, flush with water and add drain treatment tabs.\nStep 3: Inspect coil fins — if clogged with debris, brush or blow clean.\nStep 4: Verify thermostat setpoints match store schedule.\nStep 5: Check all belts (per monthly procedure).\nStep 6: Log everything. Flag any Level 2 issues (leaks, compressor noise, refrigerant) to director.'},
-  {id:18,name:'HVAC condenser fan motor inspection',freq:'quarterly',cat:'hvac',day:6,month:2,year:2026,done:true,assignId:0,
-   summary:'Inspect fan blades and motor for vibration, noise, or debris.',
-   steps:'Step 1: While unit is running, listen for unusual vibration or grinding.\nStep 2: Look at fan blade rotation — should be smooth and centered.\nStep 3: After shutting down, manually spin blade — should turn freely with no wobble.\nStep 4: Clean any debris from coil fins around the fan.\nStep 5: Log. Noisy motor or bearing issues = Level 1 condenser fan motor replacement.'},
-  {id:19,name:'Exhaust fan bearing inspection',freq:'quarterly',cat:'hvac',day:6,month:2,year:2026,done:true,assignId:0,
-   summary:'Listen and feel for rough bearing operation on all exhaust fans.',
-   steps:'Step 1: With fan running, place hand lightly on motor housing — feel for vibration.\nStep 2: Listen for grinding, squealing, or clicking sounds.\nStep 3: Shut down and spin fan shaft by hand — should rotate silently and freely.\nStep 4: Any roughness = bearing failing. Schedule motor replacement (Level 2 Inc. expense) before it seizes.'},
-  {id:20,name:'Air vent & diffuser cleaning',freq:'quarterly',cat:'hvac',day:6,month:2,year:2026,done:true,assignId:0,
-   summary:'Remove and clean all supply and return air grilles throughout the building.',
-   steps:'Step 1: Turn off HVAC for affected zones or inform team that airflow will stop briefly.\nStep 2: Remove each diffuser/grille by unscrewing or pressing the release tabs.\nStep 3: Wash in hot soapy water or run through dishwasher.\nStep 4: Wipe duct opening with a damp cloth.\nStep 5: Reinstall grilles. Note any with damaged fins — Level 1 replacement.'},
-  {id:21,name:'Restroom exhaust fan inspection',freq:'monthly',cat:'hvac',day:20,month:2,year:2026,done:true,assignId:0,
-   summary:'Listen for bearing noise. Flag motor or fan replacement needs.',
-   steps:'Step 1: Enter each restroom and listen to the exhaust fan while running.\nStep 2: Fan should be quiet with steady airflow. Rattling = loose cover. Grinding = bearing failure.\nStep 3: Remove fan cover and check for dust buildup — clean with compressed air or vacuum.\nStep 4: Log condition. Motor replacement = Level 2. Full fan replacement = Level 3.'},
-  {id:22,name:'Ansul system visual inspection',freq:'monthly',cat:'safety',day:3,month:2,year:2026,done:true,assignId:3,
-   summary:'Check nozzle covers, pull station, pressure gauge — all must be in spec.',
-   steps:'Step 1: Locate each Ansul nozzle above the fryers and grill. Confirm all metal covers are in place.\nStep 2: Find the red pull station handle — must be accessible with nothing blocking it.\nStep 3: Read the pressure gauge on the Ansul tank — needle must be in the green zone.\nStep 4: Check certification tag — must not be expired.\nStep 5: Log all findings. Any out-of-spec item = notify director immediately.'},
-  {id:23,name:'Ansul system visual inspection',freq:'monthly',cat:'safety',day:28,month:2,year:2026,done:false,assignId:3,
-   summary:'Check nozzle covers, pull station, pressure gauge — all must be in spec.',
-   steps:'Step 1: Locate each Ansul nozzle above the fryers and grill. Confirm all metal covers are in place.\nStep 2: Find the red pull station handle — must be accessible with nothing blocking it.\nStep 3: Read the pressure gauge on the Ansul tank — needle must be in the green zone.\nStep 4: Check certification tag — must not be expired.\nStep 5: Log all findings. Any out-of-spec item = notify director immediately.'},
-  {id:24,name:'Ansul certification — schedule vendor',freq:'biweekly',cat:'safety',day:1,month:2,year:2026,done:true,assignId:3,
-   summary:'Book semi-annual Ansul cert with licensed vendor. Log date.',
-   steps:'Step 1: Check the Ansul certification tag — note the expiration month.\nStep 2: Contact your licensed fire suppression vendor at least 3 weeks before expiration.\nStep 3: Confirm appointment and add to calendar.\nStep 4: On day of service: clear area under hood for vendor access.\nStep 5: Collect the signed certification form. File with health dept folder.\nStep 6: Note: 12-year certification is Level 2 (Inc. expense). Regular 6-month cert is Level 1 FCR.'},
-  {id:25,name:'Fire extinguisher inspection',freq:'monthly',cat:'safety',day:3,month:2,year:2026,done:true,assignId:3,
-   summary:'Gauge in green, pin present, seal intact, label legible on all units.',
-   steps:'Step 1: Walk each fire extinguisher in the building.\nStep 2: Check pressure gauge — needle must be in the GREEN zone. Red = recharge needed.\nStep 3: Pull pin must be present and the tamper seal must be unbroken.\nStep 4: Shake and feel — no clumping inside.\nStep 5: Check inspection tag date — must be within the last 12 months.\nStep 6: Log each unit. Any issue = replace immediately (Level 1 FCR).'},
-  {id:26,name:'Fire extinguisher inspection',freq:'monthly',cat:'safety',day:28,month:2,year:2026,done:false,assignId:3,
-   summary:'Gauge in green, pin present, seal intact, label legible on all units.',
-   steps:'Step 1: Walk each fire extinguisher in the building.\nStep 2: Check pressure gauge — needle must be in the GREEN zone.\nStep 3: Pull pin present, tamper seal unbroken.\nStep 4: Check inspection tag date.\nStep 5: Log each unit. Any issue = replace (Level 1 FCR).'},
-  {id:27,name:'Fire sprinkler head inspection',freq:'quarterly',cat:'safety',day:7,month:2,year:2026,done:true,assignId:3,
-   summary:'Visually check all heads — no damage, paint, corrosion, or obstruction within 18".',
-   steps:'Step 1: Walk the building with a flashlight.\nStep 2: Visually inspect each sprinkler head. DO NOT TOUCH — even slight force can damage them.\nStep 3: Look for: paint overspray, corrosion, physical damage, or any object within 18 inches.\nStep 4: If a head is painted, damaged, or obstructed, call your sprinkler vendor immediately.\nStep 5: Log inspection date and results.'},
-  {id:28,name:'Emergency light test',freq:'monthly',cat:'safety',day:3,month:2,year:2026,done:true,assignId:0,
-   summary:'Press test button on every unit — must stay lit 90+ seconds.',
-   steps:'Step 1: Locate every emergency exit light and emergency light fixture.\nStep 2: Press and hold the TEST button on each unit.\nStep 3: Count to 90. The light must stay on the entire time.\nStep 4: Any unit that flickers or dies before 90 seconds = replace battery or unit (Level 1 FCR).\nStep 5: Log pass/fail for each unit and the total count.'},
-  {id:29,name:'Emergency light test',freq:'monthly',cat:'safety',day:28,month:2,year:2026,done:false,assignId:0,
-   summary:'Press test button on every unit — must stay lit 90+ seconds.',
-   steps:'Step 1: Locate every emergency exit light and emergency light fixture.\nStep 2: Press and hold TEST button on each unit.\nStep 3: Count to 90 — must stay lit.\nStep 4: Failures = replace battery or unit (Level 1 FCR).\nStep 5: Log pass/fail per unit.'},
-  {id:30,name:'Pest control / Steritech treatment',freq:'monthly',cat:'safety',day:13,month:2,year:2026,done:true,assignId:0,
-   summary:'Coordinate Steritech visit. File the report in health dept folder.',
-   steps:'Step 1: Confirm Steritech appointment is on the calendar 2 weeks out.\nStep 2: On day of service: ensure technician has access to all areas (kitchen, restrooms, storage).\nStep 3: Walk the store with the technician if possible.\nStep 4: Collect the signed service report.\nStep 5: File report in your health dept folder. Health inspectors ask for this.'},
-  {id:31,name:'Bug light glue board replacement',freq:'monthly',cat:'safety',day:13,month:2,year:2026,done:true,assignId:0,
-   summary:'Replace glue boards and check UV bulbs in all insect traps.',
-   steps:'Step 1: Locate all insect light traps (usually near back door, restrooms, or storage).\nStep 2: Remove the glue board — wear gloves.\nStep 3: Count insects caught. High numbers in a specific area = report to Steritech.\nStep 4: Insert fresh glue board.\nStep 5: Check UV bulb — it should glow purple/blue. Dim or out = replace bulb (Level 1 FCR).\nStep 6: Dispose of old boards per local regulations. Log count.'},
-  {id:32,name:'Refrigeration condenser coil cleaning',freq:'quarterly',cat:'equipment',day:6,month:2,year:2026,done:true,assignId:0,
-   summary:'Brush/blow clean coil fins on all display cases, breading tables, undercounter units.',
-   steps:'Step 1: Pull equipment away from wall to access the back condenser coil.\nStep 2: Using a coil brush or compressed air, remove dust and debris from fins.\nStep 3: Brush from top to bottom — do not bend fins.\nStep 4: If fins are heavily clogged or bent, use coil cleaner spray (foam type) and rinse.\nStep 5: Push equipment back. Check temperature is maintaining after 30 minutes.\nStep 6: Log all units serviced. This prevents ~70% of compressor failures.'},
-  {id:33,name:'Undercounter refrigerator inspection',freq:'monthly',cat:'equipment',day:12,month:2,year:2026,done:true,assignId:0,
-   summary:'Check gasket seal, thermostat accuracy, and drain line on Hobart/Traulsen units.',
-   steps:'Step 1: Open door and run finger along gasket. Should seal with no gaps or cracks.\nStep 2: Check internal thermometer — should match setpoint within 2°F.\nStep 3: Locate drain line at back. Should be clear — pour a small amount of water to test flow.\nStep 4: Check shelves and interior for frost buildup (indicates door seal issue).\nStep 5: Log condition. Compressor or refrigerant issues = Level 2 call.'},
-  {id:34,name:'Ice cream machine — error log review',freq:'monthly',cat:'equipment',day:13,month:2,year:2026,done:true,assignId:0,
-   summary:'Pull Taylor error log. Verify auto-pasteurization is completing.',
-   steps:'Step 1: Press MENU then DIAGNOSTIC or ERROR LOG on the Taylor 707/751/793/794.\nStep 2: Review all logged errors. Most are temperature or door-open events — note anything unusual.\nStep 3: Verify the daily Heat Treat (auto-pasteurization) is completing. Look for HT COMPLETE in the log.\nStep 4: If HT did not complete, product in machine is not food-safe — discard and clean.\nStep 5: Clean exterior surfaces and log review date.'},
-  {id:35,name:'Water filter replacement (pre & post)',freq:'monthly',cat:'equipment',day:7,month:2,year:2026,done:true,assignId:0,
-   summary:'Replace pre-filter and post-filter in water treatment system.',
-   steps:'Step 1: Shut off water supply to the filter system.\nStep 2: Relieve pressure by opening a downstream faucet.\nStep 3: Unscrew filter housing (use housing wrench if needed). Have a towel ready.\nStep 4: Remove old filter cartridge. Note size and model.\nStep 5: Insert new cartridge. Lubricate O-ring with food-grade grease.\nStep 6: Reinstall housing hand-tight, then 1/4 turn more.\nStep 7: Turn water back on slowly. Check for leaks.\nStep 8: Run water 2 minutes before serving. Log date and filter brand/size.'},
-  {id:36,name:'Water softener salt check',freq:'monthly',cat:'equipment',day:7,month:2,year:2026,done:true,assignId:0,
-   summary:'Check brine tank salt level and top off. Inspect bypass valve.',
-   steps:'Step 1: Lift the brine tank lid.\nStep 2: Salt should be visible above the water level. If water is visible with no salt, refill immediately.\nStep 3: Add bags of salt (use pellet style — prevents bridging).\nStep 4: Check bypass valve — should be in SERVICE position (not bypass).\nStep 5: Log level and any salt brand used.'},
-  {id:37,name:'RO Chloraban tank inspection',freq:'monthly',cat:'equipment',day:7,month:2,year:2026,done:true,assignId:0,
-   summary:'Check Chloraban level and top off. Inspect tank fittings for leaks.',
-   steps:'Step 1: Locate Chloraban tank (usually near water filter system).\nStep 2: Check level indicator or sight glass — top off if below 1/3.\nStep 3: Inspect all fittings and connections for drips.\nStep 4: Log level reading.'},
-  {id:38,name:'RO membrane performance check',freq:'quarterly',cat:'equipment',day:7,month:2,year:2026,done:true,assignId:0,
-   summary:'Check TDS reading and flow rate. Replace membrane if performance drops.',
-   steps:'Step 1: Use a TDS meter to test the post-RO water. Should be below 50 ppm.\nStep 2: Check flow rate at post-RO tap — should match spec sheet for your system.\nStep 3: If TDS is above 50 ppm or flow is slow, membrane needs replacement (Level 1 FCR).\nStep 4: Log TDS reading and date. Track trend over time — gradual increase = membrane wearing.'},
-  {id:39,name:'Backflow preventer annual inspection',freq:'yearly',cat:'equipment',day:14,month:2,year:2026,done:true,assignId:0,
-   summary:'Annual test by certified inspector. File report for local code compliance.',
-   steps:'Step 1: Schedule certified backflow inspector (must be licensed for your jurisdiction).\nStep 2: Inspector will attach test gauges and run the standard two-valve test.\nStep 3: Collect signed test report. Must pass for code compliance.\nStep 4: File with your health dept and municipal water compliance folder.\nStep 5: Note: if backflow fails, water must be shut off until repaired. This is a Level 2 repair (Inc. expense).'},
-  {id:40,name:'Floor drain hydrojetting & cleaning',freq:'monthly',cat:'cleaning',day:12,month:2,year:2026,done:true,assignId:1,
-   summary:'Rod and clean all kitchen floor drains to prevent FOG backup.',
-   steps:'Step 1: Use a drain snake or call your plumber for hydrojetting service.\nStep 2: Remove drain grates and scrub with a stiff brush and degreaser.\nStep 3: Rod each drain to break up any FOG (fats, oils, grease) accumulation.\nStep 4: Flush with hot water to confirm clear flow.\nStep 5: Replace grates. Log date and which drains were serviced.'},
-  {id:41,name:'General caulking inspection',freq:'quarterly',cat:'cleaning',day:7,month:2,year:2026,done:true,assignId:0,
-   summary:'Inspect caulk at all sinks, counters, and baseboards. Re-caulk gaps.',
-   steps:'Step 1: Walk every sink, counter edge, and floor/wall junction in the kitchen and restrooms.\nStep 2: Look for cracking, peeling, missing, or discolored caulk.\nStep 3: Re-caulk any gaps with food-safe silicone caulk.\nStep 4: Apply smoothly and let cure per product instructions before wetting.\nStep 5: Health dept flags this on virtually every inspection — stay ahead of it.'},
-  {id:42,name:'Drain tempering valve (DTV) check',freq:'quarterly',cat:'cleaning',day:5,month:2,year:2026,done:true,assignId:0,
-   summary:'Verify DTV keeps dishwasher discharge temp at or below code limit.',
-   steps:'Step 1: Run dishwasher through a full cycle.\nStep 2: Measure discharge water temperature at the drain outlet with a thermometer.\nStep 3: Should not exceed local code limit (typically 140°F at drain).\nStep 4: If too hot, the DTV is failing and needs replacement (Level 2 repair).\nStep 5: Log temperature reading.'},
-  {id:43,name:'Ceiling tile & diffuser walkthrough',freq:'monthly',cat:'cleaning',day:20,month:2,year:2026,done:true,assignId:0,
-   summary:'Walk dining room and kitchen for stained, cracked, or displaced ceiling tiles.',
-   steps:'Step 1: Walk every room slowly, looking up at the ceiling grid.\nStep 2: Note any tiles that are stained (usually from leaks or grease), cracked, or displaced.\nStep 3: Individual tile replacement is Level 1 FCR — order and swap same day.\nStep 4: Stained tiles from a roof leak = Level 2 or 3 depending on severity. Report to director.\nStep 5: Also check that all supply air grilles (diffusers) are clean and properly seated.'},
-  {id:44,name:'Canopy mister system maintenance',freq:'monthly',cat:'cleaning',day:15,month:2,year:2026,done:true,assignId:0,
-   summary:'Flush nozzles, check supply line, inspect for clogs or leaks.',
-   steps:'Step 1: Turn on mister system and walk the canopy.\nStep 2: Check each nozzle — fine mist = good. Dripping or no mist = clogged nozzle.\nStep 3: Remove clogged nozzles and soak in vinegar solution 30 minutes, then rinse.\nStep 4: Inspect supply line for any cracks or drips at fittings.\nStep 5: Log which nozzles were cleaned or replaced.'},
-  {id:45,name:'Irrigation system check',freq:'monthly',cat:'cleaning',day:15,month:2,year:2026,done:true,assignId:0,
-   summary:'Manually run each zone. Check for broken heads, leaks, or coverage gaps.',
-   steps:'Step 1: Access irrigation controller and manually activate each zone one at a time.\nStep 2: Walk the zone while it runs. Look for broken or misdirected heads.\nStep 3: Any head spraying concrete or running non-stop = repair immediately (Level 1 FCR part).\nStep 4: Adjust timer settings seasonally — less water in winter.\nStep 5: Log zone status and any heads replaced.'},
-  {id:46,name:'Detention/retention basin inspection',freq:'quarterly',cat:'cleaning',day:8,month:2,year:2026,done:true,assignId:0,
-   summary:'Inspect sand filter, inlet/outlet structures. Local stormwater compliance.',
-   steps:'Step 1: Walk the retention/detention basin on your property.\nStep 2: Check inlet and outlet pipes for blockage or debris.\nStep 3: Inspect sand filter if present — should not be compacted or clogged.\nStep 4: Note standing water (more than 24 hrs after rain = potential clog).\nStep 5: Log condition. Major rework is Level 3. Keep this log in case of municipal inspection.'},
-  {id:47,name:'Menuboard lighting & hardware check',freq:'monthly',cat:'cleaning',day:14,month:2,year:2026,done:true,assignId:0,
-   summary:'Check all menuboard bulbs, ballasts, hinges, and locks (interior & exterior).',
-   steps:'Step 1: View exterior menuboard from drive-thru — any dim panels or dead bulbs visible?\nStep 2: Open menuboard housing (key required) and inspect ballasts and bulb connections.\nStep 3: Check hinges — should open and close smoothly with no binding.\nStep 4: Test lock — should engage cleanly.\nStep 5: Interior menuboard: check lighting strips and plexi glass for cracks.\nStep 6: Replace any burned-out bulbs or ballasts (Level 1 FCR).'},
-];
+let tasks=[];
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function getUserName(id){const u=users.find(x=>x.id===id);return u?u.name:'';}
@@ -2085,13 +1926,15 @@ function getTasksForDay(d,m,y){return tasks.filter(t=>t.day===d&&t.month===m&&t.
 function isToday(d,m,y){return d===TODAY_D&&m===TODAY_M&&y===TODAY_Y;}
 function fmtDate(day,month,year){return MONTHS()[month].slice(0,3)+' '+day+', '+year;}
 function catLabel(cat){
-  const map={fryer:'cat_fryer',ice:'cat_ice',hvac:'cat_hvac',cleaning:'cat_cleaning',equipment:'cat_equipment',safety:'cat_safety'};
+  if (CAT[cat] && CAT[cat].label) return CAT[cat].label;
+  // fallback to i18n key for built-in cats
+  var map={fryer:'cat_fryer',ice:'cat_ice',hvac:'cat_hvac',cleaning:'cat_cleaning',equipment:'cat_equipment',safety:'cat_safety'};
   return t(map[cat]||cat);
 }
 
 function populateSelects() {
   const freqOpts = FREQ_KEYS.map(k=>`<option value="${k}">${FREQ(k)}</option>`).join('');
-  const catOpts = ['fryer','ice','hvac','cleaning','equipment','safety'].map(c=>`<option value="${c}">${catLabel(c)}</option>`).join('');
+  const catOpts = Object.keys(CAT).map(c=>`<option value="${c}">${catLabel(c)}</option>`).join('');
   const roleOpts = ['team','lead','manager','director'].map(r=>`<option value="${r}">${t('role_'+r)}</option>`).join('');
   const shiftOpts = ['AM','PM','both'].map(s=>`<option value="${s}">${t('shift_'+s.toLowerCase())}</option>`).join('');
   ['mTaskFreq','manualFreq'].forEach(id=>{
@@ -2641,7 +2484,6 @@ function saveModalTask(){
   if(assignId&&assignId!==prevAssignId){const task=tasks.find(x=>x.name===name&&x.assignId===assignId);const user=getUserById(assignId);if(task&&user){sendAssignmentEmail(task,user);showToast('📧 Email sent to '+user.name,'success');}}
   closeModal();renderCal();updateStats();
   if(dayPanelOpen)renderDayPanelList();
-  if(document.getElementById('view-tasks').classList.contains('active'))renderTaskTable();
   if(document.getElementById('view-manage').classList.contains('active'))renderManage();
 }
 function openReschedModal(id){reschedId=id;const task=tasks.find(x=>x.id===id);document.getElementById('reschedTaskName').textContent='"'+task.name+'"';const mm=String(task.month+1).padStart(2,'0'),dd=String(task.day).padStart(2,'0');document.getElementById('reschedDate').value=`${task.year}-${mm}-${dd}`;document.getElementById('reschedReason').value='';document.getElementById('reschedModal').style.display='flex';}
@@ -2655,7 +2497,6 @@ function confirmResched(){
   closeReschedModal();showToast('"'+task.name+'" rescheduled','success');
   renderCal();updateStats();
   if(dayPanelOpen)renderDayPanelList();
-  if(document.getElementById('view-tasks').classList.contains('active'))renderTaskTable();
   if(document.getElementById('view-manage').classList.contains('active'))renderManage();
 }
 function confirmDelete(id){
@@ -2664,7 +2505,6 @@ function confirmDelete(id){
   tasks=tasks.filter(x=>x.id!==id);showToast('"'+task.name+'" deleted','');
   renderCal();updateStats();
   if(dayPanelOpen)renderDayPanelList();
-  if(document.getElementById('view-tasks').classList.contains('active'))renderTaskTable();
   if(document.getElementById('view-manage').classList.contains('active'))renderManage();
 }
 
@@ -3057,8 +2897,7 @@ populateSelects();
 renderCal();
 updateStats();
 document.getElementById('todayStrip').classList.add('expanded');
-// Local pre-populate so calendar looks right before Supabase loads
-setTimeout(autoPopulateAll, 50);
+// (pre-populate runs after Supabase loads in scheduleAutoPopulate)
 document.querySelectorAll('.view').forEach(el=>{el.style.display='none';el.classList.remove('active');});
 const cv=document.getElementById('view-calendar');cv.style.display='flex';cv.classList.add('active');
 document.getElementById('monthViewWrap').style.display='flex';
@@ -3572,7 +3411,6 @@ async function loadTasks() {
     nextId = Math.max(nextId, maxId + 1);
     renderCal(); updateStats();
     if (dayPanelOpen) renderDayPanelList();
-    if (document.getElementById('view-tasks').classList.contains('active'))  renderTaskTable();
     if (document.getElementById('view-manage').classList.contains('active')) renderManage();
     setSyncDot('live');
   } catch(err) {
@@ -3639,14 +3477,13 @@ async function loadCompletionHistory() {
 // ── FULL REFRESH (tasks + users) ──────────────────────────────────────────────
 async function refreshAll() {
   if (!sbReady) {
-    // Not connected — cancel pending retry and try right now
     if (window._initRetryTimer) { clearTimeout(window._initRetryTimer); window._initRetryTimer = null; }
     window._initAttempt = 0;
     initSupabase();
     return;
   }
   setSyncDot('syncing');
-  await Promise.all([ loadTasks(), loadUsers() ]);
+  await Promise.all([ loadTasks(), loadUsers(), loadRemoteSettings() ]);
   if (document.getElementById('view-history').classList.contains('active')) loadCompletionHistory();
   setSyncDot('live');
 }
@@ -3666,8 +3503,7 @@ function startAutoRefresh() {
 async function initSupabase() {
   setSyncDot('syncing');
   showSbBanner('warn', '⏳  Connecting to database…');
-  var grid = document.getElementById('monthGrid');
-  if (grid) grid.innerHTML = skeletonHTML();
+  // Calendar starts empty — no skeleton needed, loads fast
 
   if (typeof window._initAttempt === 'undefined') window._initAttempt = 0;
   if (typeof window._initRetryTimer === 'undefined') window._initRetryTimer = null;
@@ -3707,7 +3543,6 @@ async function initSupabase() {
     // Connection success is silent — sync dot going Online is enough
 
     renderCal(); updateStats(); populateUserDropdowns();
-    if (document.getElementById('view-tasks').classList.contains('active'))   renderTaskTable();
     if (document.getElementById('view-manage').classList.contains('active'))  renderManage();
     if (document.getElementById('view-users').classList.contains('active'))   { renderUserList(); renderEmailLog(); }
     if (document.getElementById('view-history').classList.contains('active')) renderHistoryList();
@@ -3715,6 +3550,7 @@ async function initSupabase() {
     startAutoRefresh();
     if (writeQueue.length) retryQueue();
     scheduleAutoPopulate(); // populate 3-month horizon
+    loadRemoteSettings();   // sync categories + store settings across devices
 
   } catch(err) {
     console.error('[sb] init attempt', window._initAttempt, 'failed:', err.message);
@@ -3862,7 +3698,6 @@ function renderHistoryList() {
       }
       if (assignId) { var u2 = getUserById(assignId); if (u2) { sendAssignmentEmail(newTask, u2); showToast('📧 Email sent to ' + u2.name, 'success'); } }
     }
-    if (document.getElementById('view-tasks').classList.contains('active'))  renderTaskTable();
     if (document.getElementById('view-manage').classList.contains('active')) renderManage();
   };
 })();
@@ -3944,7 +3779,6 @@ function renderHistoryList() {
     showToast('"' + task.name + '" deleted', '');
     renderCal(); updateStats();
     if (dayPanelOpen) renderDayPanelList();
-    if (document.getElementById('view-tasks').classList.contains('active'))  renderTaskTable();
     if (document.getElementById('view-manage').classList.contains('active')) renderManage();
     if (sbReady) sbWrite('Delete task', function(){ return sbDelete('tasks?id=eq.' + String(id)); });
   };
@@ -3963,7 +3797,6 @@ function renderHistoryList() {
     closeReschedModal(); showToast('"' + task.name + '" rescheduled', 'success');
     renderCal(); updateStats();
     if (dayPanelOpen) renderDayPanelList();
-    if (document.getElementById('view-tasks').classList.contains('active'))  renderTaskTable();
     if (document.getElementById('view-manage').classList.contains('active')) renderManage();
     if (sbReady) {
       var rid = String(reschedId);
@@ -4515,6 +4348,259 @@ function scheduleAutoPopulate() {
     }
   }, 3600000); // 1 hour
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CATEGORY EDITOR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function renderCatEditor() {
+  var list = document.getElementById('catEditorList');
+  if (!list) return;
+  var keys = Object.keys(CAT);
+  if (!keys.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--text3);font-style:italic;padding:4px 0;">No categories yet. Add one below.</div>';
+    return;
+  }
+  list.innerHTML = keys.map(function(key) {
+    var c = CAT[key];
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">'
+      + '<div style="width:14px;height:14px;border-radius:3px;background:' + c.dot + ';flex-shrink:0;"></div>'
+      + '<input style="flex:1;border:1px solid var(--border-md);border-radius:6px;padding:7px 10px;font-size:14px;font-family:var(--font-body);outline:none;" '
+      +   'value="' + c.label + '" '
+      +   'onchange="renameCategory(\'' + key + '\', this.value)" '
+      +   'onblur="renameCategory(\'' + key + '\', this.value)">'
+      + '<button onclick="deleteCategory(\'' + key + '\')" style="background:var(--red-light);color:var(--red);border:1px solid var(--red-mid);border-radius:6px;padding:7px 12px;cursor:pointer;font-size:13px;min-height:36px;white-space:nowrap;">Delete</button>'
+      + '</div>';
+  }).join('');
+}
+
+function renderCatLegend() {
+  var legend = document.getElementById('catLegend');
+  if (!legend) return;
+  var html = '<div style="padding:4px 12px 8px;">'
+    + '<div class="sidebar-label">Categories</div>'
+    + Object.keys(CAT).map(function(key) {
+        var c = CAT[key];
+        return '<div class="cat-dot-row"><div class="cat-dot" style="background:' + c.dot + ';"></div><span>' + c.label + '</span></div>';
+      }).join('')
+    + '</div>';
+  legend.innerHTML = html;
+}
+
+function renderHistoryFilters() {
+  var el = document.getElementById('historyFilters');
+  if (!el) return;
+  el.innerHTML = '<button class="filter-btn active" onclick="filterHistory(\'all\',this)">All</button>'
+    + Object.keys(CAT).map(function(key) {
+        var c = CAT[key];
+        return '<button class="filter-btn" onclick="filterHistory(\'' + key + '\',this)">'
+          + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c.dot + ';margin-right:4px;vertical-align:middle;"></span>'
+          + c.label + '</button>';
+      }).join('');
+}
+
+function refreshCategoryUI() {
+  renderCatLegend();
+  renderHistoryFilters();
+  populateSelects();    // update task add/edit dropdowns
+  renderCal();          // re-render calendar chips
+  updateStats();
+}
+
+function addCategory() {
+  var input = document.getElementById('newCatName');
+  var name  = input.value.trim();
+  if (!name) { showToast('Enter a category name', 'error'); return; }
+
+  // Generate a key from the name (lowercase, no spaces)
+  var key = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+  if (!key) { showToast('Name must contain letters or numbers', 'error'); return; }
+  if (CAT[key]) { showToast('A category with that name already exists', 'error'); return; }
+
+  // Pick next colour from palette
+  var palette = CAT_PALETTE;
+  var usedCount = Object.keys(CAT).length;
+  var colours = palette[usedCount % palette.length];
+
+  CAT[key] = { label: name, bg: colours.bg, text: colours.text, dot: colours.dot, border: colours.border };
+  saveCats();
+  input.value = '';
+  renderCatEditor();
+  refreshCategoryUI();
+  showToast('"' + name + '" category added', 'success');
+}
+
+function renameCategory(key, newLabel) {
+  newLabel = newLabel.trim();
+  if (!newLabel || !CAT[key]) return;
+  if (CAT[key].label === newLabel) return; // no change
+  CAT[key].label = newLabel;
+  saveCats();
+  renderCatLegend();
+  renderHistoryFilters();
+  populateSelects();
+  renderCal();
+  showToast('Category renamed', 'success');
+}
+
+function deleteCategory(key) {
+  if (!CAT[key]) return;
+  var label = CAT[key].label;
+
+  // Check if any tasks use this category
+  var inUse = tasks.filter(function(t) { return t.cat === key; }).length;
+  var msg = inUse > 0
+    ? 'Delete "' + label + '"? ' + inUse + ' task(s) use this category and will show as unlabelled.'
+    : 'Delete "' + label + '" category?';
+
+  if (!confirm(msg)) return;
+
+  delete CAT[key];
+  saveCats();
+  renderCatEditor();
+  refreshCategoryUI();
+  showToast('"' + label + '" removed', '');
+}
+
+// ── Call renderCatEditor when Settings view is opened ────────────────────────
+(function() {
+  var _orig = switchView;
+  window.switchView = function(v) {
+    _orig(v);
+    if (v === 'settings') renderCatEditor();
+  };
+})();
+
+// Initial renders on load
+setTimeout(function() {
+  renderCatLegend();
+  renderHistoryFilters();
+}, 10);
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SETTINGS SYNC — reads/writes to Supabase app_settings table
+// One row per setting key. All devices share the same rows.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Load all settings from Supabase and apply them
+async function loadRemoteSettings() {
+  try {
+    var rows = await sbGet('app_settings?select=key,value');
+    if (!rows || !rows.length) return;
+
+    var map = {};
+    rows.forEach(function(r) { map[r.key] = r.value; });
+
+    // Categories
+    if (map['cats']) {
+      try {
+        var parsed = JSON.parse(map['cats']);
+        if (parsed && typeof parsed === 'object') {
+          CAT = parsed;
+          saveCats(); // mirror to localStorage as cache
+          refreshCategoryUI();
+        }
+      } catch(e) { console.warn('[settings] cats parse error:', e.message); }
+    }
+
+    // Store info
+    if (map['store_num']) {
+      var sn = document.getElementById('storeNum');
+      if (sn) sn.value = map['store_num'];
+      localStorage.setItem('storeNum', map['store_num']);
+    }
+    if (map['store_loc']) {
+      var sl = document.getElementById('storeLoc');
+      if (sl) sl.value = map['store_loc'];
+      localStorage.setItem('storeLoc', map['store_loc']);
+    }
+
+    // AI instructions
+    if (map['ai_instructions']) {
+      var ai = document.getElementById('aiInstructions');
+      if (ai) ai.value = map['ai_instructions'];
+      localStorage.setItem('aiInstructions', map['ai_instructions']);
+    }
+
+    // Grok API key — store in localStorage only (security), don't sync to DB
+    // (key stays device-local intentionally)
+
+    // Email toggle
+    if (map['email_enabled'] !== undefined) {
+      var tog = document.getElementById('toggle-email');
+      if (tog) {
+        if (map['email_enabled'] === 'true') tog.classList.add('on');
+        else tog.classList.remove('on');
+      }
+    }
+
+    console.log('[settings] loaded from Supabase:', Object.keys(map).length, 'keys');
+  } catch(err) {
+    console.warn('[settings] load failed, using local:', err.message);
+  }
+}
+
+// Write a single setting key to Supabase (upsert)
+async function saveRemoteSetting(key, value) {
+  if (!sbReady) return;
+  try {
+    await sbFetch('app_settings?key=eq.' + key, {
+      method: 'POST',
+      headers: Object.assign({}, SB_HDRS, {
+        'Prefer': 'return=minimal,resolution=merge-duplicates'
+      }),
+      body: JSON.stringify({ key: key, value: String(value) })
+    });
+  } catch(err) {
+    console.warn('[settings] save failed for', key, ':', err.message);
+  }
+}
+
+// Override saveCats to also sync to Supabase
+(function() {
+  var _origSaveCats = window.saveCats;
+  window.saveCats = function() {
+    _origSaveCats();
+    saveRemoteSetting('cats', JSON.stringify(CAT));
+  };
+})();
+
+// Override saveStoreSettings to also sync to Supabase
+(function() {
+  var _origSave = window.saveStoreSettings;
+  window.saveStoreSettings = function() {
+    _origSave();
+    var sn = document.getElementById('storeNum').value;
+    var sl = document.getElementById('storeLoc').value;
+    saveRemoteSetting('store_num', sn);
+    saveRemoteSetting('store_loc', sl);
+  };
+})();
+
+// Override saveInstructions to also sync to Supabase
+(function() {
+  var _origSaveInstr = window.saveInstructions;
+  window.saveInstructions = function() {
+    _origSaveInstr();
+    var val = document.getElementById('aiInstructions').value;
+    saveRemoteSetting('ai_instructions', val);
+  };
+})();
+
+// Sync email toggle on change
+(function() {
+  var tog = document.getElementById('toggle-email');
+  if (tog) {
+    var _origClick = tog.onclick;
+    tog.onclick = function() {
+      this.classList.toggle('on');
+      saveRemoteSetting('email_enabled', this.classList.contains('on') ? 'true' : 'false');
+    };
+  }
+})();
 
 
 </script>
