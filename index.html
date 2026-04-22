@@ -1909,17 +1909,23 @@ function FREQ(k) { return t('freq_'+k); }
 const ROLE_COLORS = {team:['#E6F4EA','#137333'],lead:['#E8F0FE','#1967D2'],manager:['#FEF3E2','#B06000'],director:['#FCE8E6','#C5221F']};
 const AVATAR_COLORS = ['#E4002B','#1967D2','#188038','#E37400','#8A8880','#D4537E','#7B5EA7','#1A7A6E'];
 
-const TODAY_D=6, TODAY_M=3, TODAY_Y=2026;  // April 6, 2026 (month is 0-indexed)
+// Always use real current date — never hardcode
+var _realToday = new Date();
+var TODAY_D = _realToday.getDate();
+var TODAY_M = _realToday.getMonth();   // 0-indexed
+var TODAY_Y = _realToday.getFullYear();
 let calView='month';
 let curMonth=TODAY_M, curYear=TODAY_Y;
-let weekStartDate=new Date(TODAY_Y,TODAY_M,5); // Sunday April 5, 2026
+// Start week on the Sunday of the current week
+var _todayObj = new Date(TODAY_Y, TODAY_M, TODAY_D);
+let weekStartDate = new Date(TODAY_Y, TODAY_M, TODAY_D - _todayObj.getDay());
 let nextId=100, nextUserId=10;
 let editingId=null, reschedId=null, editingUserId=null;
 let activeFilter='all', activeCatFilter=null;
 let emailLog=[];
 let todayStripOpen=true;
 let selectedDay=TODAY_D, selectedMonth=TODAY_M, selectedYear=TODAY_Y;
-let selectedDateStr=`${TODAY_Y}-04-06`;
+let selectedDateStr=`${TODAY_Y}-${String(TODAY_M+1).padStart(2,'0')}-${String(TODAY_D).padStart(2,'0')}`;
 let dayPanelOpen=false;
 
 let users=[
@@ -2148,8 +2154,9 @@ function calNav(dir){
   renderCal();
 }
 function goToday(){
-  curMonth=TODAY_M;curYear=TODAY_Y;
-  weekStartDate=new Date(TODAY_Y,TODAY_M,TODAY_D-new Date(TODAY_Y,TODAY_M,TODAY_D).getDay());
+  var _now=new Date();
+  curMonth=_now.getMonth();curYear=_now.getFullYear();
+  weekStartDate=new Date(_now.getFullYear(),_now.getMonth(),_now.getDate()-_now.getDay());
   renderCal();
 }
 function renderCal(){if(calView==='month')renderMonth();else renderWeek();}
@@ -2577,7 +2584,11 @@ function sendAssignmentEmail(task, user) {
 }
 
 // ── TASK MODALS ───────────────────────────────────────────────────────────────
-function openAddModal(){openAddModalForDate(`2026-04-06`);}
+function openAddModal(){
+  var t=new Date();
+  var ds=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  openAddModalForDate(ds);
+}
 function openAddModalForDate(dateStr){
   editingId=null;
   document.getElementById('modalTitle').textContent=t('add_task');
@@ -2720,7 +2731,7 @@ function updateStats(){
   const due=todayTasks.filter(t=>!t.done).length;
   document.getElementById('statDue').textContent=due;
   const badgeEl=document.getElementById('badge-today');if(badgeEl)badgeEl.textContent=due;
-  // This week = April 6–12 (Mon–Sun of current week)
+  // This week = 7 days starting today
   const weekStart=new Date(TODAY_Y,TODAY_M,TODAY_D);
   const weekEnd=new Date(TODAY_Y,TODAY_M,TODAY_D+6);
   const weekTasks=tasks.filter(t=>{const td=new Date(t.year,t.month,t.day);return td>=weekStart&&td<=weekEnd;});
@@ -2752,7 +2763,8 @@ function openStatPanel(type) {
     const weekEnd = new Date(TODAY_Y,TODAY_M,TODAY_D+6);
     taskList = tasks.filter(t=>{ const td=new Date(t.year,t.month,t.day); return td>=weekStart&&td<=weekEnd; })
       .sort((a,b)=>new Date(a.year,a.month,a.day)-new Date(b.year,b.month,b.day));
-    titleEl.textContent = 'This Week — Apr ' + TODAY_D + '–' + (TODAY_D+6);
+    var _wStart=new Date(TODAY_Y,TODAY_M,TODAY_D),_wEnd=new Date(TODAY_Y,TODAY_M,TODAY_D+6);
+    titleEl.textContent = 'This Week — ' + MONTHS()[_wStart.getMonth()].slice(0,3) + ' ' + TODAY_D + '–' + MONTHS()[_wEnd.getMonth()].slice(0,3) + ' ' + _wEnd.getDate();
     subEl.textContent = taskList.length + ' tasks · ' + taskList.filter(t=>t.done).length + ' done';
   }
 
@@ -3037,7 +3049,7 @@ function FREQ(k) {
   if (k === 'custom') return t('freq_custom');
   return t('freq_' + k);
 }
-document.getElementById('manualDate').value=`2026-04-06`;
+(function(){var t=new Date();document.getElementById('manualDate').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');})();
 loadSettings();
 applyI18n();
 populateSelects();
@@ -4442,7 +4454,7 @@ async function autoPopulateAll() {
 // Uses a date stamp in localStorage to avoid re-running multiple times per day
 var _lastAutoPopDate = '';
 function scheduleAutoPopulate() {
-  var today = TODAY_Y + '-' + TODAY_M + '-' + TODAY_D;
+  var _tn=new Date(); var today = _tn.getFullYear()+'-'+_tn.getMonth()+'-'+_tn.getDate();
   var lastRun = localStorage.getItem('cfa_autopop_date');
   if (lastRun !== today) {
     // New day (or first run) — populate now
