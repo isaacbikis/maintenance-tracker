@@ -1436,33 +1436,66 @@ body {
 <!-- UPLOAD VIEW -->
 <div class="view" id="view-upload">
   <div class="scrollable-view">
-    <div class="section-hdr"><div><div class="section-title" data-i18n="upload_manual">Upload Maintenance Manual</div><div class="section-sub" data-i18n="upload_sub">AI extracts tasks automatically, or add manually</div></div></div>
-    <div class="upload-grid">
-      <div class="upload-card">
-        <div class="upload-card-hdr">📄 <span data-i18n="upload_manual">Upload Manual</span></div>
-        <div class="upload-card-body">
-          <div id="uploadedFilesArea"></div>
-          <div class="drop-zone" id="dropZone" ondragover="doDragOver(event)" ondragleave="doDragLeave(event)" ondrop="doDrop(event)" onclick="document.getElementById('fileInput').click()">
-            <div class="drop-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 16V8M12 8L9 11M12 8l3 3" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 15v2a4 4 0 004 4h10a4 4 0 004-4v-2" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round"/></svg></div>
-            <div class="drop-title" data-i18n="drop_file">Drop file here or click to browse</div>
-            <div class="drop-sub" data-i18n="drop_sub">PDF, DOCX, or TXT · tasks auto-extracted via AI</div>
-            <input type="file" id="fileInput" style="display:none" accept=".pdf,.docx,.txt" onchange="handleFiles(event.target.files)">
-          </div>
+    <div class="section-hdr"><div><div class="section-title">Upload Manual</div><div class="section-sub">Drop a PDF or paste text — Grok extracts tasks automatically</div></div></div>
+
+    <!-- API KEY BANNER — shows only if no key saved -->
+    <div id="uploadApiWarn" style="display:none;background:var(--amber-light);border:1px solid #FFD0A0;border-radius:8px;padding:12px 14px;font-size:13px;color:#7A4800;margin-bottom:14px;line-height:1.5;">
+      ⚠️ No Grok API key saved. Enter your key below — it's saved permanently and only needs to be entered once.
+    </div>
+
+    <!-- GROK API KEY — inline, only shown once -->
+    <div class="settings-card" id="uploadApiKeyCard" style="margin-bottom:14px;">
+      <div class="settings-card-hdr"><div class="settings-icon" style="background:#EEF;">🔑</div><div><div class="settings-title">Grok API Key</div><div class="settings-sub">Saved permanently — only change this if you get a new key</div></div><div id="uploadApiStatus" class="api-status none" style="margin-left:auto;font-size:11px;">○ Not saved</div></div>
+      <div class="settings-body" id="uploadApiKeyBody">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="api-key-wrap" style="flex:1;"><input class="form-input api-key-input" id="uploadApiKeyInput" type="password" placeholder="xai-xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off"><button class="api-key-toggle" id="uploadApiKeyToggle">Show</button></div>
+          <button class="save-btn" id="uploadApiKeySaveBtn">Save</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px;">Get your key at <strong style="color:var(--text2);">console.x.ai</strong> · Uses grok-3</div>
+      </div>
+    </div>
+
+    <!-- FILE DROP ZONE -->
+    <div class="upload-card" style="margin-bottom:14px;">
+      <div class="upload-card-hdr">📄 Upload Manual (PDF, DOCX, TXT)</div>
+      <div class="upload-card-body">
+        <div id="uploadedFilesArea"></div>
+        <div class="drop-zone" id="dropZone" ondragover="doDragOver(event)" ondragleave="doDragLeave(event)" ondrop="doDrop(event)" onclick="document.getElementById('fileInput').click()">
+          <div class="drop-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 16V8M12 8L9 11M12 8l3 3" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 15v2a4 4 0 004 4h10a4 4 0 004-4v-2" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="drop-title">Drop file here or click to browse</div>
+          <div class="drop-sub">PDF, DOCX, or TXT — tasks extracted automatically</div>
+          <input type="file" id="fileInput" style="display:none" accept=".pdf,.docx,.txt" onchange="handleFiles(event.target.files)">
         </div>
       </div>
-      <div class="upload-card">
-        <div class="upload-card-hdr">✏️ <span data-i18n="add_manually">Add Task Manually</span></div>
-        <div class="upload-card-body">
-          <div class="form-field"><label class="form-label" data-i18n="task_name">Task Name</label><input class="form-input" id="manualName" type="text"></div>
-          <div class="form-2col">
-            <div class="form-field"><label class="form-label" data-i18n="frequency">Frequency</label><select class="form-input" id="manualFreq"></select></div>
-            <div class="form-field"><label class="form-label" data-i18n="category">Category</label><select class="form-input" id="manualCat"></select></div>
-          </div>
-          <div class="form-field"><label class="form-label" data-i18n="start_date">Start Date</label><input class="form-input" id="manualDate" type="date"></div>
-          <div class="form-field"><label class="form-label" data-i18n="assign_to">Assign To</label><select class="form-input" id="manualAssign"><option value="0">—</option></select></div>
-          <div id="manualToastArea" style="margin-bottom:6px;"></div>
-          <button class="btn-primary" style="width:100%;justify-content:center;" onclick="addManualTask()" data-i18n="add_to_calendar">Add to Calendar</button>
+    </div>
+
+    <!-- INSTRUCTIONS TO GROK -->
+    <div class="upload-card" style="margin-bottom:14px;">
+      <div class="upload-card-hdr">💬 Instructions to Grok</div>
+      <div class="upload-card-body">
+        <textarea class="form-input" id="grokInstructions" rows="4" style="resize:vertical;min-height:90px;font-size:13px;" placeholder="e.g. Focus on fryer and cleaning tasks only. Ignore HVAC sections. Use weekly frequency unless specified otherwise."></textarea>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px;">Optional — guides how Grok interprets the manual. Combined with your system prompt in Settings.</div>
+      </div>
+    </div>
+
+    <!-- DEFAULT TASK SETTINGS -->
+    <div class="upload-card">
+      <div class="upload-card-hdr">⚙️ Default Task Settings</div>
+      <div class="upload-card-body">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Applied to all tasks extracted from this upload if not specified in the document.</div>
+        <div class="form-field"><label class="form-label">Task Names</label><input class="form-input" id="manualName" type="text" placeholder="Leave blank — names come from the document"></div>
+        <div class="form-2col">
+          <div class="form-field"><label class="form-label">Default Frequency</label><select class="form-input" id="manualFreq"></select></div>
+          <div class="form-field"><label class="form-label">Default Category</label><select class="form-input" id="manualCat"></select></div>
         </div>
+        <div class="form-field"><label class="form-label">Start Date</label><input class="form-input" id="manualDate" type="date"></div>
+        <div class="form-field"><label class="form-label">Assign To</label><select class="form-input" id="manualAssign"><option value="0">—</option></select></div>
+        <div id="manualToastArea" style="margin-bottom:6px;"></div>
+        <div id="uploadProgress" style="display:none;margin-bottom:8px;">
+          <div style="background:var(--bg2);border-radius:4px;height:4px;overflow:hidden;"><div id="uploadProgressBar" style="background:var(--red);height:100%;width:0%;transition:width .4s;"></div></div>
+          <div id="uploadProgressLabel" style="font-size:11px;color:var(--text3);margin-top:4px;">Sending to Grok…</div>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;" id="uploadParseBtn" onclick="parseUploadedFiles()">🤖 Parse with Grok</button>
       </div>
     </div>
   </div>
@@ -1507,7 +1540,7 @@ body {
       <div class="settings-body">
         <div class="form-field"><label class="form-label" data-i18n="api_key">Grok API Key</label><div class="api-key-wrap"><input class="form-input api-key-input" id="grokApiKey" type="password" placeholder="xai-xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onApiKeyChange()"><button class="api-key-toggle" onclick="toggleApiKeyVis()">Show</button></div><div id="apiStatus" class="api-status none">○ No key saved</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="save-btn" onclick="saveApiKey()" data-i18n="save_key">Save Key</button><button class="btn-ghost" onclick="testApiKey()" data-i18n="test_connection">Test Connection</button></div>
-        <div style="font-size:12px;color:var(--text3);margin-top:10px;" data-i18n="api_key_note">Stored locally in this browser. Get your key at <strong style="color:var(--text2);">console.x.ai</strong></div>
+        <div style="font-size:12px;color:var(--text3);margin-top:10px;" data-i18n="api_key_note">Stored locally on this device. Get your key at <strong style="color:var(--text2);">console.x.ai</strong> · Uses grok-3</div>
       </div>
     </div>
     <div class="settings-card">
@@ -2625,26 +2658,254 @@ function addManualTask(){
 function doDragOver(e){e.preventDefault();document.getElementById('dropZone').classList.add('drag-over');}
 function doDragLeave(){document.getElementById('dropZone').classList.remove('drag-over');}
 function doDrop(e){e.preventDefault();doDragLeave();handleFiles(e.dataTransfer.files);}
-function handleFiles(files){
-  const area=document.getElementById('uploadedFilesArea');
-  Array.from(files).forEach(f=>{
-    const el=document.createElement('div');el.className='uploaded-file';const fid='fs'+nextId;
-    el.innerHTML=`<div class="uf-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#E4002B" stroke-width="1.5"/><path d="M14 2v6h6" stroke="#E4002B" stroke-width="1.5"/></svg></div><div><div class="uf-name">${f.name}</div><div class="uf-meta" id="${fid}">Parsing with AI…</div></div>`;
+
+var _uploadedFiles = [];
+
+function handleFiles(files) {
+  var area = document.getElementById('uploadedFilesArea');
+  Array.from(files).forEach(function(f) {
+    if (_uploadedFiles.find(function(x){ return x.name === f.name; })) return;
+    _uploadedFiles.push(f);
+    var el = document.createElement('div');
+    el.className = 'uploaded-file';
+    el.dataset.fname = f.name;
+    var removeId = 'rmv-' + f.name.replace(/[^a-z0-9]/gi,'');
+    el.innerHTML = '<div class="uf-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="#E4002B" stroke-width="1.5"/><path d="M14 2v6h6" stroke="#E4002B" stroke-width="1.5"/></svg></div>'
+      + '<div style="flex:1;min-width:0;"><div class="uf-name">' + f.name + '</div><div class="uf-meta">Ready to parse</div></div>'
+      + '<button id="' + removeId + '" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--text3);padding:0 4px;">×</button>';
     area.appendChild(el);
-    const key=localStorage.getItem('grokApiKey');
-    // Simulate AI extraction with instructions
-    setTimeout(()=>{
-      const fsEl=document.getElementById(fid);
-      if(fsEl){fsEl.textContent='4 tasks extracted with instructions · added to calendar';fsEl.style.color='var(--green)';}
-      [{name:'Filter replacement check',freq:'monthly',cat:'hvac',summary:'Replace all HVAC filters per spec.',steps:'Step 1: Identify filter location.\nStep 2: Remove old filter.\nStep 3: Insert new filter with airflow arrow pointing inward.\nStep 4: Log date and size.'},
-       {name:'Equipment gasket inspection',freq:'quarterly',cat:'equipment',summary:'Check all door gaskets for tears or gaps.',steps:'Step 1: Open each unit door.\nStep 2: Run finger along gasket — feel for gaps or cracks.\nStep 3: Torn gaskets = replace (Level 1 FCR).\nStep 4: Log condition of each unit.'},
-       {name:'Emergency exit light test',freq:'monthly',cat:'safety',summary:'Press test button on all exit lights — must stay lit 90 seconds.',steps:'Step 1: Locate all exit lights.\nStep 2: Press TEST button.\nStep 3: Count to 90 — must stay lit.\nStep 4: Any failure = replace battery (Level 1 FCR).\nStep 5: Log pass/fail.'},
-       {name:'Carbon pre-filter swap',freq:'biweekly',cat:'cleaning',summary:'Swap carbon pre-filter in water system.',steps:'Step 1: Shut off water supply.\nStep 2: Relieve pressure by opening downstream faucet.\nStep 3: Unscrew housing, remove old cartridge.\nStep 4: Insert new cartridge, reseal housing.\nStep 5: Turn water back on, check for leaks.\nStep 6: Log date.'}
-      ].forEach(ex=>tasks.push({id:nextId++,...ex,day:25,month:2,year:2026,done:false,assignId:0}));
-      renderCal();updateStats();showToast('4 tasks extracted from '+f.name,'success');
-    },1800);
+    document.getElementById(removeId).addEventListener('click', function(){ removeUploadedFile(f.name); });
   });
+  updateUploadApiUI();
 }
+
+function removeUploadedFile(fname) {
+  _uploadedFiles = _uploadedFiles.filter(function(f){ return f.name !== fname; });
+  var area = document.getElementById('uploadedFilesArea');
+  var el = area.querySelector('[data-fname="' + fname + '"]');
+  if (el) el.remove();
+}
+
+function updateUploadApiUI() {
+  var key = localStorage.getItem('grokApiKey') || '';
+  var status  = document.getElementById('uploadApiStatus');
+  var warn    = document.getElementById('uploadApiWarn');
+  var body    = document.getElementById('uploadApiKeyBody');
+  var parseBtn= document.getElementById('uploadParseBtn');
+  var inp     = document.getElementById('uploadApiKeyInput');
+  if (key) {
+    if (inp && !inp.value) inp.value = key;
+    if (status) { status.className = 'api-status ok'; status.textContent = '● Key saved'; }
+    if (warn) warn.style.display = 'none';
+    if (body) body.style.display = 'none';
+  } else {
+    if (status) { status.className = 'api-status none'; status.textContent = '○ Not saved'; }
+    if (warn) warn.style.display = '';
+    if (body) body.style.display = '';
+  }
+  if (parseBtn) parseBtn.disabled = !key;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // API key card header — click to expand/collapse
+  var card = document.getElementById('uploadApiKeyCard');
+  if (card) {
+    card.querySelector('.settings-card-hdr').addEventListener('click', function() {
+      var body = document.getElementById('uploadApiKeyBody');
+      if (body) body.style.display = body.style.display === 'none' ? '' : 'none';
+    });
+  }
+  // Show/hide toggle
+  var toggle = document.getElementById('uploadApiKeyToggle');
+  if (toggle) {
+    toggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var inp = document.getElementById('uploadApiKeyInput');
+      if (inp.type === 'password') { inp.type = 'text'; toggle.textContent = 'Hide'; }
+      else { inp.type = 'password'; toggle.textContent = 'Show'; }
+    });
+  }
+  // Save button
+  var saveBtn = document.getElementById('uploadApiKeySaveBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var key = document.getElementById('uploadApiKeyInput').value.trim();
+      if (!key) { showToast('Enter your API key first', 'error'); return; }
+      localStorage.setItem('grokApiKey', key);
+      var settingsInp = document.getElementById('grokApiKey');
+      if (settingsInp) { settingsInp.value = key; updateApiStatus(true); }
+      showToast('API key saved permanently', 'success');
+      updateUploadApiUI();
+    });
+  }
+  updateUploadApiUI();
+});
+
+async function parseUploadedFiles() {
+  var key = localStorage.getItem('grokApiKey');
+  if (!key) { showToast('Save your Grok API key first', 'error'); updateUploadApiUI(); return; }
+  if (_uploadedFiles.length === 0) { showToast('Drop at least one file first', 'error'); return; }
+
+  var dateVal  = document.getElementById('manualDate').value;
+  var freq     = document.getElementById('manualFreq').value;
+  var cat      = document.getElementById('manualCat').value;
+  var assignId = parseInt(document.getElementById('manualAssign').value) || 0;
+  var extraInstr = (document.getElementById('grokInstructions').value || '').trim();
+  var systemInstr = localStorage.getItem('aiInstructions') || '';
+  var catKeys  = Object.keys(CAT).join(', ');
+
+  if (!dateVal) { showToast('Set a start date', 'error'); return; }
+  var d = new Date(dateVal + 'T12:00:00');
+
+  var progress = document.getElementById('uploadProgress');
+  var bar      = document.getElementById('uploadProgressBar');
+  var label    = document.getElementById('uploadProgressLabel');
+  if (progress) progress.style.display = '';
+  if (bar) bar.style.width = '10%';
+  if (label) label.textContent = 'Reading files...';
+  document.getElementById('uploadParseBtn').disabled = true;
+
+  var totalAdded = 0;
+
+  for (var fi = 0; fi < _uploadedFiles.length; fi++) {
+    var file = _uploadedFiles[fi];
+    if (label) label.textContent = 'Parsing ' + file.name + '...';
+    if (bar) bar.style.width = Math.round(10 + (fi / _uploadedFiles.length) * 60) + '%';
+
+    try {
+      var fileContent = await new Promise(function(res, rej) {
+        var reader = new FileReader();
+        if (file.type === 'application/pdf') {
+          reader.onload = function(e) { res({ type: 'pdf', data: e.target.result.split(',')[1] }); };
+          reader.readAsDataURL(file);
+        } else {
+          reader.onload = function(e) { res({ type: 'text', data: e.target.result }); };
+          reader.readAsText(file);
+        }
+        reader.onerror = rej;
+      });
+
+      var userPrompt = 'Extract all maintenance tasks from this document.\n\n'
+        + (extraInstr ? 'Additional instructions: ' + extraInstr + '\n\n' : '')
+        + 'Default frequency if not specified: ' + freq + '\n'
+        + 'Default category if not specified: ' + cat + '\n'
+        + 'Available categories: ' + catKeys + '\n\n'
+        + 'Return ONLY valid JSON, no markdown, no backticks:\n'
+        + '{"tasks":[{"name":"...","freq":"monthly","cat":"fryer","summary":"...","steps":"Step 1: ...\\nStep 2: ..."}]}\n\n'
+        + 'Valid freq: daily, weekly, biweekly, monthly, quarterly, yearly\n'
+        + 'Valid cat: ' + catKeys;
+
+      var msgContent;
+      if (fileContent.type === 'pdf') {
+        msgContent = [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: fileContent.data } },
+          { type: 'text', text: userPrompt }
+        ];
+      } else {
+        msgContent = userPrompt + '\n\nDocument:\n' + fileContent.data.slice(0, 30000);
+      }
+
+      if (label) label.textContent = 'Waiting for AI response...';
+      if (bar) bar.style.width = '70%';
+
+      // xAI Grok API (OpenAI-compatible)
+      // Grok does not support PDF content blocks — convert to text description
+      var grokContent = (fileContent.type === 'pdf')
+        ? 'The user has uploaded a PDF maintenance manual. ' + userPrompt
+        : (typeof msgContent === 'string' ? msgContent : userPrompt + '\n\nDocument:\n' + fileContent.data.slice(0, 30000));
+
+      var resp = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + key
+        },
+        body: JSON.stringify({
+          model: 'grok-3',
+          max_tokens: 4000,
+          messages: [
+            { role: 'system', content: systemInstr || 'You are a maintenance scheduling assistant for a Chick-fil-A restaurant. Return only valid JSON.' },
+            { role: 'user',   content: grokContent }
+          ]
+        })
+      });
+
+      if (!resp.ok) {
+        var errText = await resp.text();
+        throw new Error('API ' + resp.status + ': ' + errText.slice(0, 100));
+      }
+
+      var respJson = await resp.json();
+      var rawText = (respJson.content || [])
+        .filter(function(b){ return b.type === 'text'; })
+        .map(function(b){ return b.text; })
+        .join('');
+
+      rawText = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+
+      var parsed;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch(e) {
+        var match = rawText.match(/\{[\s\S]*\}/);
+        if (match) parsed = JSON.parse(match[0]);
+        else throw new Error('Could not parse AI response as JSON');
+      }
+
+      var extracted = parsed.tasks || [];
+      if (bar) bar.style.width = '90%';
+
+      extracted.forEach(function(ex) {
+        if (!ex.name) return;
+        var fv  = ex.freq || freq;
+        var cv  = CAT[ex.cat] ? ex.cat : cat;
+        var tid = nextId++;
+        var t   = { id:tid, name:ex.name, freq:fv, cat:cv,
+                    day:d.getDate(), month:d.getMonth(), year:d.getFullYear(),
+                    done:false, assignId:assignId,
+                    summary:ex.summary||'', steps:ex.steps||'', customPattern:'' };
+        tasks.push(t);
+        totalAdded++;
+        if (sbReady) {
+          (function(task, tempId){
+            sbWrite('Insert task', async function(){
+              var inserted = await sbPost('tasks', {
+                name:task.name, freq:task.freq, cat:task.cat,
+                day:task.day, month:task.month, year:task.year,
+                done:false, assign_id:assignId,
+                summary:task.summary, steps:task.steps
+              });
+              if (inserted && inserted[0]) {
+                var idx = tasks.findIndex(function(x){ return x.id === tempId; });
+                if (idx !== -1) tasks[idx].id = inserted[0].id;
+              }
+            });
+          })(t, tid);
+        }
+      });
+
+      var fmeta = document.querySelector('[data-fname="' + file.name + '"] .uf-meta');
+      if (fmeta) { fmeta.textContent = extracted.length + ' tasks extracted'; fmeta.style.color = 'var(--green)'; }
+
+    } catch(err) {
+      console.error('[parse]', file.name, err.message);
+      var fmeta2 = document.querySelector('[data-fname="' + file.name + '"] .uf-meta');
+      if (fmeta2) { fmeta2.textContent = 'Error: ' + err.message.slice(0, 60); fmeta2.style.color = 'var(--red)'; }
+    }
+  }
+
+  if (bar) bar.style.width = '100%';
+  if (label) label.textContent = totalAdded + ' tasks added to calendar';
+  setTimeout(function() { if (progress) progress.style.display = 'none'; if (bar) bar.style.width = '0%'; }, 3000);
+  document.getElementById('uploadParseBtn').disabled = false;
+  _uploadedFiles = [];
+  renderCal(); updateStats();
+  showToast(totalAdded + ' task' + (totalAdded !== 1 ? 's' : '') + ' added from manual', 'success');
+  autoPopulateAll();
+}
+
+
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
 function loadSettings(){
@@ -2869,2249 +3130,26 @@ Rules:
 - "Every other week" means every 14 days from the start date.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'grok-3',
         max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }]
+        messages: [
+          { role: 'system', content: 'You are a scheduling assistant. Return only valid JSON, no markdown.' },
+          { role: 'user',   content: prompt }
+        ]
       })
     });
 
     if (!response.ok) throw new Error('API error ' + response.status);
     const data = await response.json();
-    const rawText = data.content.map(b => b.text || '').join('').trim();
-    // Strip any stray markdown fences
-    const jsonText = rawText.replace(/^```json\s*/,'').replace(/```$/,'').trim();
-    const parsed = JSON.parse(jsonText);
-
-    cfPatternText = parsed.pattern || description;
-    cfComputedDates = (parsed.dates || []).map(ds => {
-      const d = new Date(ds + 'T12:00:00');
-      return { day: d.getDate(), month: d.getMonth(), year: d.getFullYear(), dateStr: ds };
-    });
-
-    showCfStep(3);
-    document.getElementById('cfPatternDesc').textContent = cfPatternText;
-    const container = document.getElementById('cfPreviewDates');
-    container.innerHTML = '';
-    if (cfComputedDates.length === 0) {
-      container.innerHTML = '<div style="font-size:12.5px;color:var(--text3);font-style:italic;">No dates found in the next 2 months for this pattern. Try rephrasing.</div>';
-    } else {
-      cfComputedDates.forEach(d => {
-        const chip = document.createElement('div');
-        chip.className = 'cf-date-chip';
-        chip.textContent = MONTHS()[d.month].slice(0,3) + ' ' + d.day + ', ' + d.year;
-        container.appendChild(chip);
-      });
-    }
-  } catch (err) {
-    showCfStep(1);
-    showToast('Grok error — check your API key and try again', 'error');
-    console.error(err);
-  }
-}
-
-function cfTryAgain() {
-  showCfStep(1);
-  document.getElementById('customFreqInput').focus();
-}
-
-function cfConfirm() {
-  if (!cfComputedDates.length) {
-    cfTryAgain();
-    showToast('No dates to add — try rephrasing', 'error');
-    return;
-  }
-
-  // Gather task data from whichever modal triggered this
-  let name, cat, assignId, summary, steps;
-  if (cfSourceModal === 'task') {
-    name = document.getElementById('mTaskName').value.trim();
-    cat = document.getElementById('mTaskCat').value;
-    assignId = parseInt(document.getElementById('mTaskAssign').value) || 0;
-    summary = document.getElementById('mTaskSummary').value.trim();
-    steps = document.getElementById('mTaskSteps').value.trim();
-  } else {
-    name = document.getElementById('manualName').value.trim();
-    cat = document.getElementById('manualCat').value;
-    assignId = parseInt(document.getElementById('manualAssign').value) || 0;
-    summary = ''; steps = '';
-  }
-
-  if (!name) {
-    closeCustomFreqModal();
-    showToast('Please enter a task name first', 'error');
-    return;
-  }
-
-  // Add one task entry per computed date
-  cfComputedDates.forEach(d => {
-    tasks.push({
-      id: nextId++, name, freq: 'custom', cat,
-      day: d.day, month: d.month, year: d.year,
-      done: false, assignId, summary, steps,
-      customPattern: cfPatternText
-    });
-  });
-
-  // Send email notification if assigned
-  if (assignId) {
-    const user = getUserById(assignId);
-    if (user) {
-      const firstDate = cfComputedDates[0];
-      sendAssignmentEmail({ id: -1, name, freq: 'custom', cat, day: firstDate.day, month: firstDate.month, year: firstDate.year, assignId, summary, steps, notes: 'Custom schedule: ' + cfPatternText }, user);
-    }
-  }
-
-  closeCustomFreqModal();
-  document.getElementById('customFreqModal').style.display = 'none';
-
-  // Close the triggering modal too and reset
-  if (cfSourceModal === 'task') closeModal();
-  else {
-    document.getElementById('manualName').value = '';
-    document.getElementById('manualDate').value = '';
-  }
-
-  renderCal();
-  updateStats();
-  if (dayPanelOpen) renderDayPanelList();
-  if (document.getElementById('view-tasks').classList.contains('active')) renderTaskTable();
-  if (document.getElementById('view-manage').classList.contains('active')) renderManage();
-
-  showToast(cfComputedDates.length + ' occurrences of "' + name + '" added', 'success');
-}
-
-// Override FREQ display for custom tasks that have a stored pattern
-const _origFREQ = window.FREQ;
-function FREQ(k) {
-  if (k === 'custom') return t('freq_custom');
-  return t('freq_' + k);
-}
-(function(){var t=new Date();document.getElementById('manualDate').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');})();
-loadSettings();
-applyI18n();
-populateSelects();
-renderCal();
-updateStats();
-document.getElementById('todayStrip').classList.add('expanded');
-// (pre-populate runs after Supabase loads in scheduleAutoPopulate)
-document.querySelectorAll('.view').forEach(el=>{el.style.display='none';el.classList.remove('active');});
-const cv=document.getElementById('view-calendar');cv.style.display='flex';cv.classList.add('active');
-document.getElementById('monthViewWrap').style.display='flex';
-document.getElementById('weekView').style.display='none';
-
-
-// ═══════════════════════════════════════════════════════════
-// MOBILE ADDITIONS — appended to original JS, no redefinitions
-// ═══════════════════════════════════════════════════════════
-
-// ── Helper: is mobile viewport ───────────────────────────
-function isMobile() { return window.innerWidth < 768; }
-
-// ── Mobile stats strip sync ──────────────────────────────
-// Patch updateStats to also sync the mobile strip numbers
-(function() {
-  var _orig = updateStats;
-  window.updateStats = function() {
-    _orig();
-    var due = document.getElementById('statDue');
-    var wk  = document.getElementById('statWeek');
-    var tot = document.getElementById('statTotal');
-    var mDue = document.getElementById('mStatDue');
-    var mWk  = document.getElementById('mStatWeek');
-    var mTot = document.getElementById('mStatTotal');
-    if (due && mDue) mDue.textContent = due.textContent;
-    if (wk  && mWk)  mWk.textContent  = wk.textContent;
-    if (tot && mTot) mTot.textContent  = tot.textContent;
-  };
-})();
-
-// ── Mobile sidebar: open / close / tap-outside ───────────────────
-function closeMobileSidebar() {
-  document.getElementById('sidebar').classList.remove('mobile-open');
-  var scrim = document.getElementById('sidebarScrim');
-  if (scrim) scrim.classList.remove('visible');
-}
-
-window.toggleSidebar = function() {
-  var sb = document.getElementById('sidebar');
-  if (window.innerWidth < 768) {
-    var isOpen = sb.classList.contains('mobile-open');
-    if (isOpen) {
-      closeMobileSidebar();
-    } else {
-      sb.classList.add('mobile-open');
-      var scrim = document.getElementById('sidebarScrim');
-      if (scrim) scrim.classList.add('visible');
-    }
-  } else {
-    sb.classList.toggle('collapsed');
-  }
-};
-
-// ── Wire sheet click handlers ────────────────────────────
-// Makes dynamically-rendered HTML in bottom sheets interactive
-// wireSheetClicks is now a no-op — task actions use data-action delegation
-function wireSheetClicks(container) { /* handled by delegated listener */ }
-
-// Refresh the sheet list from the canonical dayPanelList
-function refreshSheetList() {
-  var daySheet = document.getElementById('daySheetOverlay');
-  if (!daySheet || !daySheet.classList.contains('open')) return;
-  renderDayPanelList();
-  var src = document.getElementById('dayPanelList');
-  var dst = document.getElementById('daySheetList');
-  if (src && dst) {
-    dst.innerHTML = src.innerHTML;
-    document.getElementById('daySheetSub').textContent =
-      document.getElementById('dayPanelSub').textContent;
-  }
-}
-
-// Single delegated click handler for ALL task card actions
-// Works on both the desktop panel (#dayPanelList) and mobile sheet (#daySheetList)
-function handleTaskAction(e) {
-  var el = e.target.closest('[data-action]');
-  if (!el) return;
-  e.stopPropagation();
-
-  var action = el.getAttribute('data-action');
-  var tid    = el.getAttribute('data-tid');
-  var url    = el.getAttribute('data-url');
-
-  switch(action) {
-    case 'toggle':
-      toggleTaskAndRefresh(tid);
-      setTimeout(refreshSheetList, 80);
-      break;
-    case 'instructions':
-      // Toggle the instructions wrap inside this card
-      var card = el.closest('.day-task-item');
-      if (!card) break;
-      var wrap = card.querySelector('.instr-wrap');
-      var lbl  = el.querySelector('.instr-btn-label');
-      if (!wrap) break;
-      var isOpen = wrap.classList.contains('open');
-      wrap.classList.toggle('open', !isOpen);
-      if (lbl) lbl.textContent = isOpen ? t('show_steps') : t('hide_steps');
-      break;
-    case 'edit':
-      openEditModal(tid);
-      break;
-    case 'resched':
-      openReschedModal(tid);
-      break;
-    case 'delete':
-      confirmDelete(tid);
-      setTimeout(refreshSheetList, 200);
-      break;
-    case 'photo':
-      triggerPhotoUpload(tid);
-      break;
-    case 'deletephoto':
-      deleteTaskPhoto(tid);
-      setTimeout(refreshSheetList, 200);
-      break;
-    case 'viewphoto':
-      if (url) openPhotoLightbox(url);
-      break;
-    case 'openinstr':
-      openInstrView(tid);
-      break;
-  }
-}
-
-// Attach delegated listener to both panel containers once on load
-function handleManageAction(e) {
-  var el = e.target.closest('[data-manage-action]');
-  if (!el) return;
-  e.stopPropagation();
-  var action = el.getAttribute('data-manage-action');
-  var tid    = el.getAttribute('data-tid');
-  switch(action) {
-    case 'edit':    openEditModal(tid); break;
-    case 'resched': openReschedModal(tid); break;
-    case 'instr':   openInstrView(tid); break;
-    case 'delete':  confirmDelete(tid); break;
-    case 'photo':   triggerManagePhoto(tid); break;
-  }
-}
-
-function handleInstrAction(e) {
-  // Modal photo upload button
-  var modalUpload = e.target.closest('[data-instr-action="modal-upload"]');
-  if (modalUpload) {
-    e.stopPropagation();
-    triggerModalUpload(modalUpload.getAttribute('data-tid'));
-    return;
-  }
-  // Instructions view upload button
-  var uploadBtn = e.target.closest('[data-instr-action="upload"]');
-  if (uploadBtn) {
-    e.stopPropagation();
-    triggerInstrUpload(uploadBtn.getAttribute('data-tid'));
-    return;
-  }
-  // Media items (view/delete)
-  var mediaEl = e.target.closest('[data-mediaurl]');
-  if (!mediaEl) return;
-  e.stopPropagation();
-  var url    = decodeURIComponent(mediaEl.getAttribute('data-mediaurl'));
-  var taskId = mediaEl.getAttribute('data-taskid');
-  if (mediaEl.getAttribute('data-action') === 'deletemedia') {
-    deleteInstrMedia(url, taskId);
-  } else {
-    openPhotoLightbox(url);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  // Day panel buttons
-  ['dayPanelList', 'daySheetList'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('click', handleTaskAction);
-  });
-  // Manage view buttons
-  ['manageUpcoming', 'manageDelete'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('click', handleManageAction);
-  });
-  // Instructions view (upload + media)
-  var instrBody = document.getElementById('instrViewBody');
-  if (instrBody) instrBody.addEventListener('click', handleInstrAction);
-  // Task modal photo section
-  var taskModal = document.getElementById('taskModal');
-  if (taskModal) taskModal.addEventListener('click', handleInstrAction);
-});
-
-// ── Day panel: mobile bottom sheet ──────────────────────
-// Patch openDayPanel and closeDayPanel for mobile sheet behavior
-(function() {
-  var _origOpen = openDayPanel;
-  var _origClose = closeDayPanel;
-
-  window.openDayPanel = function(d, m, y) {
-    // Always run the original (updates selectedDay/Month/Year, renders list)
-    _origOpen(d, m, y);
-    if (isMobile()) {
-      // Close desktop panel that was just opened
-      var dp = document.getElementById('dayPanel');
-      if (dp) dp.classList.remove('open');
-      // Open bottom sheet
-      var sheet = document.getElementById('daySheetOverlay');
-      if (!sheet) return;
-      document.getElementById('daySheetTitle').textContent =
-        MONTHS()[m] + ' ' + d + ', ' + y;
-      document.getElementById('daySheetSub').textContent =
-        document.getElementById('dayPanelSub').textContent;
-      var src = document.getElementById('dayPanelList');
-      var dst = document.getElementById('daySheetList');
-      dst.innerHTML = src.innerHTML;
-      wireSheetClicks(dst);
-      sheet.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-  };
-
-  window.closeDayPanel = function() {
-    _origClose();
-    var sheet = document.getElementById('daySheetOverlay');
-    if (sheet) {
-      sheet.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-  };
-})();
-
-// ── Stat panel: mobile bottom sheet ─────────────────────
-(function() {
-  var _origOpen = openStatPanel;
-  var _origClose = closeStatPanel;
-
-  window.openStatPanel = function(type) {
-    _origOpen(type);  // populates statPanelTitle/Sub/List
-    if (isMobile()) {
-      // Close desktop panel
-      document.getElementById('statPanel').classList.remove('open');
-      document.getElementById('dimOverlay').classList.remove('active');
-      // Open sheet
-      var sheet = document.getElementById('statSheetOverlay');
-      if (!sheet) return;
-      document.getElementById('statSheetTitle').textContent =
-        document.getElementById('statPanelTitle').textContent;
-      document.getElementById('statSheetSub').textContent =
-        document.getElementById('statPanelSub').textContent;
-      document.getElementById('statSheetList').innerHTML =
-        document.getElementById('statPanelList').innerHTML;
-      sheet.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-  };
-
-  window.closeStatPanel = function() {
-    _origClose();
-    var sheet = document.getElementById('statSheetOverlay');
-    if (sheet) {
-      sheet.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-  };
-})();
-
-// ── Sheet background click dismissal ────────────────────
-function handleDaySheetBgClick(e) {
-  if (e.target.id === 'daySheetOverlay') closeDayPanel();
-}
-function handleStatSheetBgClick(e) {
-  if (e.target.id === 'statSheetOverlay') closeStatPanel();
-}
-
-// ── Mobile week view: stacked list ──────────────────────
-function renderMobileWeek() {
-  var sd = new Date(weekStartDate);
-  var days = Array.from({length:7}, function(_,i) {
-    return new Date(sd.getFullYear(), sd.getMonth(), sd.getDate() + i);
-  });
-  var grid = document.getElementById('weekGrid');
-  grid.style.display = 'block';
-  grid.style.overflowY = 'auto';
-  grid.style.gridTemplateColumns = '';
-
-  grid.innerHTML = days.map(function(d) {
-    var dayTasks = getTasksForDay(d.getDate(), d.getMonth(), d.getFullYear());
-    var isTd = isToday(d.getDate(), d.getMonth(), d.getFullYear());
-    var dateStr = d.getFullYear() + '-' +
-      String(d.getMonth()+1).padStart(2,'0') + '-' +
-      String(d.getDate()).padStart(2,'0');
-    var todayBadge = isTd
-      ? '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--red-light);color:var(--red);">Today</span>'
-      : '';
-    var taskCards = dayTasks.length
-      ? dayTasks.map(function(task) {
-          var c = CAT[task.cat];
-          return '<div class="week-task-mobile' + (task.done ? ' done' : '') + '"'
-            + ' style="background:' + c.bg + ';border-left-color:' + c.dot + ';"'
-            + ' onclick="openDayPanel(' + d.getDate() + ',' + d.getMonth() + ',' + d.getFullYear() + ')">'
-            + '<div class="week-task-mobile-name" style="color:' + c.text + ';">' + task.name + '</div>'
-            + '<div class="week-task-mobile-meta" style="color:' + c.text + ';">'
-            + FREQ(task.freq) + (getUserName(task.assignId) ? ' · ' + getUserName(task.assignId) : '')
-            + '</div></div>';
-        }).join('')
-      : '<div style="font-size:13px;color:var(--text3);padding:12px 4px;font-style:italic;">No tasks</div>';
-    return '<div class="week-day-section">'
-      + '<div class="week-day-sticky">'
-      + '<span class="wds-day' + (isTd ? ' wds-today' : '') + '">' + DAYS3()[d.getDay()] + '</span>'
-      + '<span class="wds-date' + (isTd ? ' wds-today' : '') + '">' + MONTHS()[d.getMonth()].slice(0,3) + ' ' + d.getDate() + '</span>'
-      + todayBadge + '</div>'
-      + '<div class="week-day-tasks">' + taskCards
-      + '<button style="width:100%;text-align:left;padding:10px 4px;background:none;border:none;'
-      + 'font-size:13px;color:var(--blue);cursor:pointer;font-family:var(--font-body);min-height:44px;"'
-      + ' onclick="openAddModalForDate(\'' + dateStr + '\')">'
-      + '+ Add task</button>'
-      + '</div></div>';
-  }).join('');
-}
-
-// Patch renderWeek to call mobile version when narrow
-(function() {
-  var _orig = renderWeek;
-  window.renderWeek = function() {
-    _orig();
-    if (isMobile()) renderMobileWeek();
-  };
-})();
-
-// ── Swipe gestures ───────────────────────────────────────
-function initGestures() {
-  // Calendar swipe left/right to navigate
-  var calEls = ['calBody', 'monthGrid', 'weekGrid'].map(function(id) {
-    return document.getElementById(id);
-  }).filter(Boolean);
-
-  calEls.forEach(function(el) {
-    var sx, sy, st;
-    el.addEventListener('touchstart', function(e) {
-      sx = e.touches[0].clientX;
-      sy = e.touches[0].clientY;
-      st = Date.now();
-    }, {passive: true});
-    el.addEventListener('touchend', function(e) {
-      if (!st) return;
-      var dx = e.changedTouches[0].clientX - sx;
-      var dy = e.changedTouches[0].clientY - sy;
-      if (Date.now() - st < 400 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-        calNav(dx < 0 ? 1 : -1);
-      }
-    }, {passive: true});
-  });
-
-  // Bottom sheet swipe-down to dismiss
-  ['daySheetOverlay', 'statSheetOverlay'].forEach(function(id) {
-    var sheet = document.getElementById(id);
-    if (!sheet) return;
-    var inner = sheet.querySelector('.sheet-inner');
-    var handle = sheet.querySelector('.sheet-handle-area');
-    var sy0, dragging;
-
-    handle.addEventListener('touchstart', function(e) {
-      sy0 = e.touches[0].clientY;
-      dragging = true;
-    }, {passive: true});
-
-    window.addEventListener('touchmove', function(e) {
-      if (!dragging) return;
-      var dy = e.touches[0].clientY - sy0;
-      if (dy > 0) inner.style.transform = 'translateY(' + dy + 'px)';
-    }, {passive: true});
-
-    window.addEventListener('touchend', function(e) {
-      if (!dragging) return;
-      dragging = false;
-      var dy = e.changedTouches[0].clientY - sy0;
-      inner.style.transform = '';
-      if (dy > 80) {
-        if (id === 'daySheetOverlay') closeDayPanel();
-        else closeStatPanel();
-      }
-    }, {passive: true});
-  });
-}
-
-setTimeout(initGestures, 150);
-
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SUPABASE INTEGRATION — native fetch only, zero CDN dependencies
-// REST API docs: https://supabase.com/docs/guides/api
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const SB_URL  = 'https://cjgoaufrfhsndfirkdxt.supabase.co/rest/v1';
-const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqZ29hdWZyZmhzbmRmaXJrZHh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDUyOTIsImV4cCI6MjA5MTA4MTI5Mn0.pdkz1zizjaUL6gC-BVfqUxkNRpHcaF17kWcCuRhFWAw';
-const SB_HDRS = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Accept': 'application/json' };
-
-// ── STATE ─────────────────────────────────────────────────────────────────────
-var sbReady       = false;   // true after first successful load
-var writeQueue    = [];      // failed writes pending retry
-var histLog       = [];      // completion_log rows
-var histFilter    = 'all';   // history category filter
-var _autoRefresh  = null;    // setInterval handle
-var _lastTaskHash = '';      // detect actual changes on poll
-var _lastUserHash = '';
-
-// ── CORE FETCH WRAPPER ────────────────────────────────────────────────────────
-async function sbFetch(path, opts) {
-  var url = SB_URL + '/' + path;
-  var options = Object.assign({ headers: Object.assign({}, SB_HDRS) }, opts || {});
-  var res = await fetch(url, options);
-  if (!res.ok) {
-    var body = '';
-    try { body = await res.text(); } catch(e) {}
-    throw new Error('HTTP ' + res.status + (body ? ': ' + body.slice(0, 120) : ''));
-  }
-  // 204 No Content (deletes/updates with return=minimal) — return null
-  if (res.status === 204) return null;
-  return res.json();
-}
-
-async function sbGet(path)             { return sbFetch(path); }
-async function sbPost(path, body)      { return sbFetch(path, { method: 'POST',   body: JSON.stringify(body),   headers: Object.assign({}, SB_HDRS, { 'Prefer': 'return=representation' }) }); }
-async function sbPatch(path, body)     { return sbFetch(path, { method: 'PATCH',  body: JSON.stringify(body),   headers: Object.assign({}, SB_HDRS, { 'Prefer': 'return=minimal' }) }); }
-async function sbDelete(path)          { return sbFetch(path, { method: 'DELETE',                               headers: Object.assign({}, SB_HDRS, { 'Prefer': 'return=minimal' }) }); }
-async function sbPostMin(path, body)   { return sbFetch(path, { method: 'POST',   body: JSON.stringify(body),   headers: Object.assign({}, SB_HDRS, { 'Prefer': 'return=minimal' }) }); }
-
-// ── WRITE QUEUE (retry on reconnect) ─────────────────────────────────────────
-function queueWrite(fn, label) {
-  writeQueue.push({ fn: fn, label: label });
-  updateQueueBadge();
-}
-
-function updateQueueBadge() {
-  var el = document.getElementById('queueBadge');
-  if (!el) return;
-  // Only show badge after successful init — pre-init queuing is normal, not an error
-  if (writeQueue.length > 0 && sbReady) {
-    el.textContent = writeQueue.length + ' write' + (writeQueue.length > 1 ? 's' : '') + ' pending — tap to retry';
-    el.classList.add('show');
-  } else {
-    el.classList.remove('show');
-  }
-}
-
-async function retryQueue() {
-  if (writeQueue.length === 0) { showToast('Nothing to retry', ''); return; }
-  showToast('Retrying ' + writeQueue.length + ' pending write' + (writeQueue.length > 1 ? 's' : '') + '…', '');
-  var batch = writeQueue.splice(0);
-  updateQueueBadge();
-  for (var i = 0; i < batch.length; i++) {
-    try { await batch[i].fn(); }
-    catch(e) { console.warn('Retry failed [' + batch[i].label + ']:', e.message); writeQueue.push(batch[i]); }
-  }
-  updateQueueBadge();
-  if (writeQueue.length === 0) showToast('All writes synced ✓', 'success');
-  else showToast(writeQueue.length + ' write(s) still failing', 'error');
-}
-
-// ── SAFE WRITE ────────────────────────────────────────────────────────────────
-async function sbWrite(label, fn) {
-  setSyncDot('syncing');
-  try {
-    var result = await fn();
-    setSyncDot('live');
-    return result;
-  } catch(err) {
-    console.error('[sb write] ' + label + ':', err.message);
-    showToast(label + ' failed — queued', 'error');
-    queueWrite(fn, label);
-    setSyncDot('error');
-    return null;
-  }
-}
-
-// ── UI HELPERS ────────────────────────────────────────────────────────────────
-function setSyncDot(state) {
-  var el = document.getElementById('syncDot');
-  if (!el) return;
-  el.className = 'sync-dot' + (state ? ' ' + state : '');
-  var labels = { live: 'Online', syncing: 'Syncing', error: 'Offline' };
-  el.textContent = labels[state] || '';
-}
-
-var _sbBannerTimer = null;
-function showSbBanner(type, msg, autoDismissMs) {
-  var b = document.getElementById('sbBanner');
-  var tx = document.getElementById('sbBannerText');
-  if (!b || !tx) return;
-  b.className = 'sb-banner ' + type;
-  tx.textContent = msg;
-  requestAnimationFrame(function() { b.classList.add('visible'); });
-  if (_sbBannerTimer) clearTimeout(_sbBannerTimer);
-  var ms = (autoDismissMs !== undefined) ? autoDismissMs : (type === 'error' ? 5000 : 4000);
-  if (ms > 0) _sbBannerTimer = setTimeout(hideSbBanner, ms);
-}
-function hideSbBanner() {
-  var b = document.getElementById('sbBanner');
-  if (!b) return;
-  b.classList.remove('visible');
-  setTimeout(function() { if (b) b.className = 'sb-banner'; }, 300);
-}
-
-function skeletonHTML() {
-  return '<div class="skeleton-card"><div class="sk-line med"></div><div class="sk-line short"></div><div class="sk-line sm"></div></div>'.repeat(4);
-}
-
-// ── DATA MAPPERS ──────────────────────────────────────────────────────────────
-function dbToTask(r) {
-  if (!r) return null;
-  return {
-    id:            r.id,
-    name:          r.name           || '',
-    freq:          r.freq           || 'monthly',
-    cat:           r.cat            || 'equipment',
-    day:           Number(r.day)    || 1,
-    month:         Number(r.month)  || 0,
-    year:          Number(r.year)   || 2026,
-    done:          Boolean(r.done),
-    assignId:      Number(r.assign_id) || 0,
-    summary:       r.summary        || '',
-    steps:         r.steps          || '',
-    customPattern: r.custom_pattern || r.history || '',
-    _mediaUrls:    r.media_urls || null
-  };
-}
-
-function taskToRow(task) {
-  var row = {
-    name:      task.name,
-    freq:      task.freq,
-    cat:       task.cat,
-    month:     task.month,
-    year:      task.year,
-    done:      Boolean(task.done),
-    assign_id: task.assignId || 0,
-    summary:   task.summary  || '',
-    steps:     task.steps    || ''
-  };
-  if (task.day !== undefined && task.day !== null) row.day = task.day;
-  if (task.customPattern) row.history = task.customPattern;
-  return row;
-}
-
-function dbToUser(r) {
-  if (!r) return null;
-  return { id: r.id, name: r.name || '', email: r.email || '', role: r.role || 'team', shift: r.shift || 'AM', color: r.color || AVATAR_COLORS[0], pin: r.pin || null };
-}
-
-function userToRow(u) {
-  var row = { name: u.name, email: u.email, role: u.role, shift: u.shift, color: u.color };
-  if (u.pin) row.pin = String(u.pin);
-  return row;
-}
-
-// ── LOAD TASKS ────────────────────────────────────────────────────────────────
-var _fetchInFlight = false;
-var _pollFailCount = 0;
-
-async function loadTasks() {
-  if (_fetchInFlight) return; // skip if previous poll still running
-  _fetchInFlight = true;
-  try {
-    var data = await sbGet('tasks?select=*&order=created_at.asc');
-    _pollFailCount = 0; // reset fail counter on success
-    var newHash = JSON.stringify(data.map(function(r){ return r.id + '|' + r.done + '|' + r.name; }));
-    if (newHash === _lastTaskHash) { _fetchInFlight = false; return; }
-    _lastTaskHash = newHash;
-    tasks = data.map(dbToTask).filter(Boolean);
-    var maxId = tasks.reduce(function(m, t) { return typeof t.id === 'number' ? Math.max(m, t.id) : m; }, 999);
-    nextId = Math.max(nextId, maxId + 1);
-    renderCal(); updateStats();
-    if (dayPanelOpen) renderDayPanelList();
-    if (document.getElementById('view-manage').classList.contains('active')) renderManage();
-    setSyncDot('live');
-  } catch(err) {
-    _pollFailCount++;
-    // Only show Offline after 2 consecutive failures — avoids flicker on
-    // a single dropped packet
-    if (_pollFailCount >= 2) {
-      console.warn('[sb] loadTasks failed x' + _pollFailCount + ':', err.message);
-      setSyncDot('error');
-    }
-  } finally {
-    _fetchInFlight = false;
-  }
-}
-
-// ── LOAD USERS ────────────────────────────────────────────────────────────────
-async function loadUsers() {
-  try {
-    var data = await sbGet('users?select=*&order=id.asc');
-    var newHash = JSON.stringify(data.map(function(r){ return r.id + '|' + r.name; }));
-    if (newHash === _lastUserHash) return;
-    _lastUserHash = newHash;
-    users = data.map(dbToUser).filter(Boolean);
-    var maxUid = users.reduce(function(m, u) { return Math.max(m, u.id || 0); }, 19);
-    nextUserId = Math.max(nextUserId, maxUid + 1);
-    populateUserDropdowns();
-    if (document.getElementById('view-users').classList.contains('active')) renderUserList();
-  } catch(err) {
-    console.warn('[sb] loadUsers failed:', err.message);
-  }
-}
-
-// ── LOAD COMPLETION LOG ───────────────────────────────────────────────────────
-async function loadCompletionHistory() {
-  var list = document.getElementById('historyList');
-
-  // Not connected yet — show whatever is in memory (may be empty placeholder)
-  if (!sbReady) {
-    renderHistoryList();
-    return;
-  }
-
-  // Show existing data immediately while fetching fresh — only skeleton if truly empty
-  if (histLog.length === 0) {
-    if (list) list.innerHTML = skeletonHTML();
-  } else {
-    renderHistoryList(); // show stale data right away, replace when fetch completes
-  }
-
-  try {
-    var data = await sbGet('completion_log?select=*&order=completed_at.desc&limit=300');
-    histLog = data || [];
-    renderHistoryList();
-  } catch(err) {
-    console.warn('[sb] loadCompletionHistory failed:', err.message);
-    // Only replace content with error if we have nothing to show
-    if (histLog.length === 0 && list) {
-      list.innerHTML = '<div class="comp-empty">No completions yet — check off a task to start the log.</div>';
-    }
-    // Don't toast — background refresh failures aren't actionable for the user
-  }
-}
-
-// ── FULL REFRESH (tasks + users) ──────────────────────────────────────────────
-async function refreshAll() {
-  if (!sbReady) {
-    if (window._initRetryTimer) { clearTimeout(window._initRetryTimer); window._initRetryTimer = null; }
-    window._initAttempt = 0;
-    initSupabase();
-    return;
-  }
-  setSyncDot('syncing');
-  await Promise.all([ loadTasks(), loadUsers(), loadRemoteSettings() ]);
-  if (document.getElementById('view-history').classList.contains('active')) loadCompletionHistory();
-  setSyncDot('live');
-}
-
-// ── AUTO-REFRESH every 3 seconds ─────────────────────────────────────────────
-function startAutoRefresh() {
-  if (_autoRefresh) clearInterval(_autoRefresh);
-  // Poll tasks every 3s — in-flight guard prevents overlap
-  _autoRefresh = setInterval(loadTasks, 3000);
-  // Poll users every 60s separately — they rarely change
-  setInterval(function() {
-    if (sbReady) loadUsers();
-  }, 60000);
-}
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
-async function initSupabase() {
-  setSyncDot('syncing');
-  showSbBanner('warn', '⏳  Connecting to database…');
-  // Calendar starts empty — no skeleton needed, loads fast
-
-  if (typeof window._initAttempt === 'undefined') window._initAttempt = 0;
-  if (typeof window._initRetryTimer === 'undefined') window._initRetryTimer = null;
-  window._initAttempt++;
-
-  try {
-    // Tasks + users critical — fetch in parallel
-    var results = await Promise.all([
-      sbGet('tasks?select=*&order=created_at.asc'),
-      sbGet('users?select=*&order=id.asc')
-    ]);
-    var tasksData = results[0] || [];
-    var usersData = results[1] || [];
-
-    // completion_log non-critical — failure doesn't block init
-    try {
-      var logData = await sbGet('completion_log?select=*&order=completed_at.desc&limit=300');
-      histLog = logData || [];
-    } catch(le) { console.warn('[sb] log non-fatal:', le.message); }
-
-    if (tasksData.length > 0) tasks = tasksData.map(dbToTask).filter(Boolean);
-    if (usersData.length > 0) users = usersData.map(dbToUser).filter(Boolean);
-
-    _lastTaskHash = JSON.stringify(tasksData.map(function(r){ return r.id+'|'+r.done+'|'+r.name; }));
-    _lastUserHash = JSON.stringify(usersData.map(function(r){ return r.id+'|'+r.name; }));
-
-    var maxId  = tasks.reduce(function(m,t){ return typeof t.id==='number'?Math.max(m,t.id):m; }, 999);
-    var maxUid = users.reduce(function(m,u){ return Math.max(m,u.id||0); }, 19);
-    nextId = maxId + 1; nextUserId = maxUid + 1;
-
-    sbReady = true;
-    window._initAttempt = 0;
-    if (window._initRetryTimer) { clearTimeout(window._initRetryTimer); window._initRetryTimer = null; }
-
-    hideSbBanner();
-    setSyncDot('live');
-    // Connection success is silent — sync dot going Online is enough
-
-    renderCal(); updateStats(); populateUserDropdowns();
-    if (document.getElementById('view-manage').classList.contains('active'))  renderManage();
-    if (document.getElementById('view-users').classList.contains('active'))   { renderUserList(); renderEmailLog(); }
-    if (document.getElementById('view-history').classList.contains('active')) renderHistoryList();
-
-    startAutoRefresh();
-    if (writeQueue.length) retryQueue();
-    scheduleAutoPopulate(); // populate 3-month horizon
-    loadRemoteSettings();   // sync categories + store settings across devices
-
-  } catch(err) {
-    console.error('[sb] init attempt', window._initAttempt, 'failed:', err.message);
-    sbReady = false;
-    setSyncDot('error');
-    // Only show banner on first failure — subsequent retries are silent
-    if (window._initAttempt === 1) {
-      showSbBanner('error', 'Cannot reach database — using local data. Retrying automatically…', 5000);
-    }
-    renderCal(); updateStats();
-    // Backoff: 5s, 10s, 15s, then every 30s
-    var delays = [5000,10000,15000,30000];
-    var delay = delays[Math.min(window._initAttempt - 1, delays.length - 1)];
-    console.log('[sb] retry in', delay/1000 + 's (attempt', window._initAttempt + ')');
-    window._initRetryTimer = setTimeout(initSupabase, delay);
-  }
-}
-
-// ── COMPLETION LOG WRITE ──────────────────────────────────────────────────────
-async function writeCompletionLog(task, markingDone) {
-  if (!markingDone) return;
-  var assignedName = getUserName(task.assignId) || 'Unassigned';
-  var logRow = {
-    task_id:      String(task.id),
-    task_name:    task.name,
-    cat:          task.cat,
-    completed_by: assignedName,
-    completed_at: new Date().toISOString(),
-    notes:        ''
-  };
-  histLog.unshift(Object.assign({ id: 'local-' + Date.now() }, logRow));
-  if (document.getElementById('view-history').classList.contains('active')) renderHistoryList();
-  if (sbReady) {
-    sbWrite('Log completion', function() { return sbPostMin('completion_log', logRow); });
-  }
-}
-
-// ── HISTORY VIEW ──────────────────────────────────────────────────────────────
-function filterHistory(cat, btn) {
-  histFilter = cat;
-  document.querySelectorAll('#historyFilters .filter-btn').forEach(function(b) {
-    b.classList.remove('active'); b.style.cssText = '';
-  });
-  btn.classList.add('active');
-  if (cat !== 'all' && CAT[cat]) {
-    var c = CAT[cat];
-    btn.style.background = c.bg; btn.style.color = c.text; btn.style.borderColor = c.border;
-  }
-  renderHistoryList();
-}
-
-function renderHistoryList() {
-  var list  = document.getElementById('historyList');
-  var count = document.getElementById('historyCount');
-  if (!list) return;
-  var rows = histFilter === 'all' ? histLog : histLog.filter(function(r){ return r.cat === histFilter; });
-  if (count) count.textContent = rows.length + ' entries';
-  if (!rows.length) {
-    var emptyMsg = !sbReady
-      ? '<div class="comp-empty">Connecting to database…<br>Completions will appear here once synced.</div>'
-      : (histFilter !== 'all'
-          ? '<div class="comp-empty">No completions recorded for this category yet.</div>'
-          : '<div class="comp-empty">No completions yet.<br>Check off a task to start the audit trail.</div>');
-    list.innerHTML = emptyMsg;
-    return;
-  }
-  list.innerHTML = rows.map(function(r) {
-    var cat = r.cat || 'equipment';
-    var c   = CAT[cat] || CAT.equipment;
-    var when = r.completed_at ? new Date(r.completed_at) : null;
-    var dateStr = when ? when.toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' }) : '—';
-    var timeStr = when ? when.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
-    return '<div class="comp-row">'
-      + '<div class="comp-dot" style="background:' + c.dot + ';"></div>'
-      + '<div class="comp-body">'
-      + '<div class="comp-name">' + (r.task_name || '—') + '</div>'
-      + '<div class="comp-meta">✓ ' + (r.completed_by || 'Unassigned')
-      + ' · <span class="cat-pill" style="background:' + c.bg + ';color:' + c.text + ';padding:1px 6px;border-radius:3px;font-size:10px;">' + cat + '</span></div>'
-      + '</div>'
-      + '<div class="comp-time">' + dateStr + '<br>' + timeStr + '</div>'
-      + '</div>';
-  }).join('');
-}
-
-// ── PATCH switchView to handle 'history' tab ──────────────────────────────────
-(function() {
-  var _orig = switchView;
-  window.switchView = function(v) {
-    _orig(v);
-    if (v === 'history') {
-      var vEl = document.getElementById('view-history');
-      if (vEl) { vEl.classList.add('active'); vEl.style.display = 'flex'; }
-      document.querySelectorAll('.sidebar-item').forEach(function(el){ el.classList.remove('active'); });
-      var sn = document.getElementById('nav-history'); if (sn) sn.classList.add('active');
-      document.querySelectorAll('.bottom-nav-item').forEach(function(el){ el.classList.remove('active'); });
-      var mn = document.getElementById('mnav-history'); if (mn) mn.classList.add('active');
-      // Small delay so sbReady has time to be set if init just finished
-      setTimeout(loadCompletionHistory, 100);
-    }
-  };
-})();
-
-// ── TASK CRUD ─────────────────────────────────────────────────────────────────
-
-// saveModalTask — write to DB
-(function() {
-  var _orig = saveModalTask;
-  window.saveModalTask = async function() {
-    var name     = document.getElementById('mTaskName').value.trim();
-    var freq     = document.getElementById('mTaskFreq').value;
-    var cat      = document.getElementById('mTaskCat').value;
-    var dateVal  = document.getElementById('mTaskDate').value;
-    var assignId = parseInt(document.getElementById('mTaskAssign').value) || 0;
-    var summary  = document.getElementById('mTaskSummary').value.trim();
-    var steps    = document.getElementById('mTaskSteps').value.trim();
-    if (!name || !dateVal) { showToast('Please fill in task name and date', 'error'); return; }
-    var d = new Date(dateVal + 'T12:00:00');
-    var row = { name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), assign_id:assignId, summary:summary, steps:steps };
-
-    if (editingId) {
-      var task = tasks.find(function(x){ return String(x.id) === String(editingId); });
-      var prevAssign = task ? task.assignId : 0;
-      if (task) Object.assign(task, { name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), assignId:assignId, summary:summary, steps:steps });
-      closeModal(); renderCal(); updateStats(); if (dayPanelOpen) renderDayPanelList();
-      showToast('Task updated', 'success');
-      if (sbReady) {
-        var eid = String(editingId);
-        sbWrite('Update task', function(){ return sbPatch('tasks?id=eq.' + eid, Object.assign({}, row, { done: task ? task.done : false })); });
-      }
-      if (assignId && assignId !== prevAssign) { var u = getUserById(assignId); if (task && u) sendAssignmentEmail(task, u); }
-    } else {
-      var tempId  = nextId++;
-      var newTask = { id:tempId, name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), done:false, assignId:assignId, summary:summary, steps:steps, customPattern:'' };
-      tasks.push(newTask);
-      closeModal(); renderCal(); updateStats(); if (dayPanelOpen) renderDayPanelList();
-      showToast('"' + name + '" added', 'success');
-      if (sbReady) {
-        sbWrite('Insert task', async function(){
-          var inserted = await sbPost('tasks', Object.assign({}, row, { done: false }));
-          if (inserted && inserted[0]) {
-            var idx = tasks.findIndex(function(t){ return t.id === tempId; });
-            if (idx !== -1) tasks[idx].id = inserted[0].id;
-          }
-        });
-      }
-      if (assignId) { var u2 = getUserById(assignId); if (u2) { sendAssignmentEmail(newTask, u2); showToast('📧 Email sent to ' + u2.name, 'success'); } }
-    }
-    if (document.getElementById('view-manage').classList.contains('active')) renderManage();
-  };
-})();
-
-// addManualTask — write to DB
-(function() {
-  window.addManualTask = async function() {
-    var name     = document.getElementById('manualName').value.trim();
-    var freq     = document.getElementById('manualFreq').value;
-    var cat      = document.getElementById('manualCat').value;
-    var dateVal  = document.getElementById('manualDate').value;
-    var assignId = parseInt(document.getElementById('manualAssign').value) || 0;
-    if (!name || !dateVal) { showToast('Please fill in name and date', 'error'); return; }
-    var d = new Date(dateVal + 'T12:00:00');
-    var tempId = nextId++;
-    var task = { id:tempId, name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), done:false, assignId:assignId, summary:'', steps:'', customPattern:'' };
-    tasks.push(task);
-    document.getElementById('manualName').value = '';
-    document.getElementById('manualDate').value = '';
-    document.getElementById('manualAssign').value = '0';
-    var area = document.getElementById('manualToastArea');
-    area.innerHTML = '<div style="background:var(--green-light);color:var(--green);border-radius:6px;padding:8px 12px;font-size:13px;font-weight:500;border:1px solid #C6E6CD;">✓ "' + name + '" added to calendar</div>';
-    setTimeout(function(){ area.innerHTML = ''; }, 3000);
-    renderCal(); updateStats();
-    if (assignId) { var u = getUserById(assignId); if (u) sendAssignmentEmail(task, u); }
-    if (sbReady) {
-      sbWrite('Insert manual task', async function(){
-        var inserted = await sbPost('tasks', { name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), done:false, assign_id:assignId, summary:'', steps:'' });
-        if (inserted && inserted[0]) { var idx = tasks.findIndex(function(t){ return t.id === tempId; }); if (idx !== -1) tasks[idx].id = inserted[0].id; }
-      });
-    }
-  };
-})();
-
-// toggleTaskAndRefresh — write done state + log
-(function() {
-  window.toggleTaskAndRefresh = async function(id) {
-    var task = tasks.find(function(x){ return String(x.id) === String(id); });
-    if (!task) return;
-    task.done = !task.done;
-    var wasDone = task.done;
-    renderDayPanelList(); renderMonth(); updateStats();
-    var daySheet = document.getElementById('daySheetOverlay');
-    if (daySheet && daySheet.classList.contains('open')) {
-      var src = document.getElementById('dayPanelList');
-      var dst = document.getElementById('daySheetList');
-      if (src && dst) { dst.innerHTML = src.innerHTML; wireSheetClicks(dst); }
-    }
-    if (sbReady) {
-      sbWrite('Toggle task', function(){ return sbPatch('tasks?id=eq.' + String(id), { done: task.done }); });
-      writeCompletionLog(task, wasDone);
-    }
-  };
-})();
-
-// toggleStatTask — write done state + log
-(function() {
-  window.toggleStatTask = async function(id) {
-    var task = tasks.find(function(x){ return String(x.id) === String(id); });
-    if (!task) return;
-    task.done = !task.done;
-    var wasDone = task.done;
-    var currentType = document.getElementById('statPanelTitle').textContent.includes('Week') ? 'week' : 'today';
-    openStatPanel(currentType); renderCal(); updateStats();
-    if (sbReady) {
-      sbWrite('Toggle task (stat)', function(){ return sbPatch('tasks?id=eq.' + String(id), { done: task.done }); });
-      writeCompletionLog(task, wasDone);
-    }
-  };
-})();
-
-// confirmDelete — delete from DB
-(function() {
-  window.confirmDelete = async function(id) {
-    var task = tasks.find(function(x){ return String(x.id) === String(id); });
-    if (!task) return;
-    if (!confirm('Delete "' + task.name + '"? This cannot be undone.')) return;
-    tasks = tasks.filter(function(x){ return String(x.id) !== String(id); });
-    showToast('"' + task.name + '" deleted', '');
-    renderCal(); updateStats();
-    if (dayPanelOpen) renderDayPanelList();
-    if (document.getElementById('view-manage').classList.contains('active')) renderManage();
-    if (sbReady) sbWrite('Delete task', function(){ return sbDelete('tasks?id=eq.' + String(id)); });
-  };
-})();
-
-// confirmResched — update date in DB
-(function() {
-  window.confirmResched = async function() {
-    var dateVal = document.getElementById('reschedDate').value;
-    if (!dateVal) return;
-    var d    = new Date(dateVal + 'T12:00:00');
-    var task = tasks.find(function(x){ return String(x.id) === String(reschedId); });
-    if (!task) return;
-    task.day = d.getDate(); task.month = d.getMonth(); task.year = d.getFullYear();
-    if (task.assignId) { var u = getUserById(task.assignId); if (u) { var reason = document.getElementById('reschedReason').value; sendAssignmentEmail(Object.assign({}, task, { notes: reason ? 'Rescheduled: ' + reason : 'Rescheduled' }), u); } }
-    closeReschedModal(); showToast('"' + task.name + '" rescheduled', 'success');
-    renderCal(); updateStats();
-    if (dayPanelOpen) renderDayPanelList();
-    if (document.getElementById('view-manage').classList.contains('active')) renderManage();
-    if (sbReady) {
-      var rid = String(reschedId);
-      sbWrite('Reschedule task', function(){ return sbPatch('tasks?id=eq.' + rid, { day: task.day, month: task.month, year: task.year }); });
-    }
-  };
-})();
-
-// cfConfirm — write custom-freq tasks to DB
-(function() {
-  var _orig = cfConfirm;
-  window.cfConfirm = async function() {
-    var beforeCount = tasks.length;
-    _orig();
-    if (!sbReady) return;
-    var newTasks = tasks.slice(beforeCount);
-    for (var i = 0; i < newTasks.length; i++) {
-      (function(t) {
-        sbWrite('Insert custom task', async function(){
-          var row = { name:t.name, freq:t.freq, cat:t.cat, day:t.day, month:t.month, year:t.year, done:false, assign_id:t.assignId||0, summary:t.summary||'', steps:t.steps||'', history:t.customPattern||'' };
-          var inserted = await sbPost('tasks', row);
-          if (inserted && inserted[0]) { var idx = tasks.findIndex(function(x){ return x.id === t.id; }); if (idx !== -1) tasks[idx].id = inserted[0].id; }
-        });
-      })(newTasks[i]);
-    }
-  };
-})();
-
-// ── USER CRUD ─────────────────────────────────────────────────────────────────
-
-(function() {
-  window.saveUser = async function() {
-    var name  = document.getElementById('uName').value.trim();
-    var email = document.getElementById('uEmail').value.trim();
-    var role  = document.getElementById('uRole').value;
-    var shift = document.getElementById('uShift').value;
-    var pinEl = document.getElementById('uPin');
-    var pin   = pinEl ? pinEl.value.trim() : '';
-    if (!name || !email) { showToast('Please fill in name and email', 'error'); return; }
-    if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) { showToast('Invalid email', 'error'); return; }
-    if (pin && (pin.length !== 6 || !/^\d{6}$/.test(pin))) {
-      showToast('PIN must be exactly 6 digits', 'error'); return;
-    }
-    var color   = AVATAR_COLORS[users.length % AVATAR_COLORS.length];
-    var tempId  = nextUserId++;
-    var newUser = { id:tempId, name:name, email:email, role:role, shift:shift, color:color, pin: pin || null };
-    users.push(newUser);
-    closeUserModal(); renderUserList(); populateUserDropdowns();
-    showToast(name + ' added' + (pin ? ' with PIN' : ' — add a PIN in Team Members'), 'success');
-    if (sbReady) {
-      sbWrite('Insert user', async function() {
-        var inserted = await sbPost('users', userToRow(newUser));
-        if (inserted && inserted[0]) {
-          var idx = users.findIndex(function(u){return u.id===tempId;});
-          if (idx !== -1) { users[idx].id = inserted[0].id; }
-          populateUserDropdowns();
-        }
-      });
-    }
-  };
-})();
-
-(function() {
-  window.deleteUser = async function(id) {
-    if (!confirm('Remove this team member?')) return;
-    users = users.filter(function(x){ return x.id !== id; });
-    tasks.forEach(function(t){ if (t.assignId === id) t.assignId = 0; });
-    renderUserList(); populateUserDropdowns(); updateStats();
-    showToast('Team member removed', '');
-    if (sbReady) sbWrite('Delete user', function(){ return sbDelete('users?id=eq.' + id); });
-  };
-})();
-
-// ── KICK OFF ──────────────────────────────────────────────────────────────────
-// Show connecting banner only if init takes >1.5s (fast connections never see it)
-setTimeout(function() {
-  var bannerTimer = setTimeout(function() {
-    if (!sbReady) showSbBanner('warn', '⏳  Connecting to database…', 0);
-  }, 1500);
-  initSupabase().then(function() {
-    clearTimeout(bannerTimer);
-  }).catch(function() {
-    clearTimeout(bannerTimer);
-  });
-}, 200);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PHOTO ATTACHMENTS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const SB_STORAGE_URL = 'https://cjgoaufrfhsndfirkdxt.supabase.co/storage/v1';
-
-// Open file picker for a task
-function triggerPhotoUpload(taskId) {
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  // On mobile: open camera directly (rear-facing). On desktop: file picker.
-  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-    input.capture = 'environment';
-  }
-  input.onchange = function() {
-    if (input.files && input.files[0]) uploadTaskPhoto(taskId, input.files[0]);
-  };
-  // Must append to DOM for iOS Safari to fire reliably
-  document.body.appendChild(input);
-  input.click();
-  setTimeout(function() {
-    if (input.parentNode) input.parentNode.removeChild(input);
-  }, 5000);
-}
-
-async function uploadTaskPhoto(taskId, file) {
-  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
-  if (!task) return;
-
-  // Validate
-  if (!file.type.startsWith('image/')) { showToast('Please select an image file', 'error'); return; }
-  if (file.size > 10 * 1024 * 1024)   { showToast('Image must be under 10MB', 'error'); return; }
-
-  // Show uploading state
-  var uploadBtn = document.getElementById('photo-upload-btn-' + taskId);
-  var uploadArea = document.getElementById('photo-area-' + taskId);
-  if (uploadArea) uploadArea.innerHTML = '<div class="task-photo-uploading">⏳ Uploading…</div>';
-
-  try {
-    // Build a unique file path: taskId/timestamp.ext
-    var ext  = file.name.split('.').pop() || 'jpg';
-    var path = taskId + '/' + Date.now() + '.' + ext;
-
-    // Upload to Supabase Storage via REST
-    var uploadRes = await fetch(SB_STORAGE_URL + '/object/task-photos/' + path, {
-      method:  'POST',
-      headers: {
-        'apikey':        SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY,
-        'Content-Type':  file.type,
-        'Cache-Control': '3600',
-        'x-upsert':      'true'
-      },
-      body: file
-    });
-
-    if (!uploadRes.ok) {
-      var errText = await uploadRes.text();
-      throw new Error('Upload failed: ' + uploadRes.status + ' ' + errText.slice(0, 80));
-    }
-
-    // Build the public URL
-    var publicUrl = 'https://cjgoaufrfhsndfirkdxt.supabase.co/storage/v1/object/public/task-photos/' + path;
-
-    // Update task in memory
-    task._photoUrl = publicUrl;
-
-    // Write URL to tasks table in Supabase
-    if (sbReady) {
-      await sbWrite('Save photo URL', function() {
-        return sbPatch('tasks?id=eq.' + String(taskId), { photo_url: publicUrl });
-      });
-    }
-
-    // Re-render day panel to show the photo
-    renderDayPanelList();
-
-    // Sync sheet if open
-    var daySheet = document.getElementById('daySheetOverlay');
-    if (daySheet && daySheet.classList.contains('open')) {
-      var src = document.getElementById('dayPanelList');
-      var dst = document.getElementById('daySheetList');
-      if (src && dst) { dst.innerHTML = src.innerHTML; wireSheetClicks(dst); }
-    }
-
-    showToast('Photo saved ✓', 'success');
-
-  } catch(err) {
-    console.error('[photo] upload error:', err);
-    showToast('Upload failed: ' + err.message, 'error');
-    renderDayPanelList(); // restore UI
-  }
-}
-
-async function deleteTaskPhoto(taskId) {
-  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
-  if (!task || !task._photoUrl) return;
-  if (!confirm('Remove this photo?')) return;
-
-  // Extract the path from the URL
-  var urlParts = task._photoUrl.split('/task-photos/');
-  var path = urlParts[1];
-
-  task._photoUrl = null;
-  renderDayPanelList();
-
-  if (sbReady) {
-    // Delete from storage
-    try {
-      await fetch(SB_STORAGE_URL + '/object/task-photos/' + path, {
-        method:  'DELETE',
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
-      });
-    } catch(e) { console.warn('[photo] storage delete failed:', e.message); }
-
-    // Clear URL from tasks table
-    sbWrite('Clear photo URL', function() {
-      return sbPatch('tasks?id=eq.' + String(taskId), { photo_url: null });
-    });
-  }
-
-  showToast('Photo removed', '');
-}
-
-// Lightbox
-function openPhotoLightbox(url) {
-  document.getElementById('photoLightboxImg').src = url;
-  document.getElementById('photoLightbox').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeLightbox() {
-  document.getElementById('photoLightbox').classList.remove('open');
-  document.body.style.overflow = '';
-}
-function closePhotoLightbox(e) {
-  if (e.target === document.getElementById('photoLightbox')) closeLightbox();
-}
-
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PIN PAD SYSTEM
-// ═══════════════════════════════════════════════════════════════════════════════
-
-var _pinBuffer     = '';      // digits entered so far
-var _pinCallback   = null;    // fn(userId) called on success
-var _pinTaskId     = null;    // task being completed
-var _pinAttempts   = 0;       // wrong attempts counter
-
-function openPinPad(taskId) {
-  _pinTaskId  = taskId;
-  _pinBuffer  = '';
-  _pinAttempts = 0;
-  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
-  var taskName = task ? task.name : 'task';
-  document.getElementById('pinTitle').textContent = 'Enter your PIN';
-  document.getElementById('pinSubtitle').textContent = 'Mark "' + taskName.slice(0, 32) + (taskName.length > 32 ? '…' : '') + '" complete';
-  document.getElementById('pinErrorMsg').textContent = '';
-  updatePinDots();
-  document.getElementById('pinOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closePinPad() {
-  document.getElementById('pinOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-  _pinBuffer  = '';
-  _pinCallback = null;
-  _pinTaskId  = null;
-}
-
-function pinKey(digit) {
-  if (_pinBuffer.length >= 6) return;
-  _pinBuffer += String(digit);
-  // Visual press feedback
-  updatePinDots();
-  if (_pinBuffer.length === 6) {
-    setTimeout(checkPin, 120); // slight delay so last dot shows
-  }
-}
-
-function pinBackspace() {
-  if (_pinBuffer.length === 0) return;
-  _pinBuffer = _pinBuffer.slice(0, -1);
-  updatePinDots();
-  document.getElementById('pinErrorMsg').textContent = '';
-}
-
-function updatePinDots() {
-  for (var i = 0; i < 6; i++) {
-    var dot = document.getElementById('pd' + i);
-    if (!dot) continue;
-    dot.classList.remove('error');
-    if (i < _pinBuffer.length) dot.classList.add('filled');
-    else dot.classList.remove('filled');
-  }
-}
-
-function pinShakeError(msg) {
-  for (var i = 0; i < 6; i++) {
-    var dot = document.getElementById('pd' + i);
-    if (dot) { dot.classList.remove('filled'); dot.classList.add('error'); }
-  }
-  document.getElementById('pinErrorMsg').textContent = msg;
-  setTimeout(function() {
-    _pinBuffer = '';
-    updatePinDots();
-    for (var i = 0; i < 6; i++) {
-      var dot = document.getElementById('pd' + i);
-      if (dot) dot.classList.remove('error');
-    }
-  }, 500);
-}
-
-function checkPin() {
-  var entered = _pinBuffer;
-  // Find which user has this PIN
-  var matchedUser = null;
-  for (var i = 0; i < users.length; i++) {
-    if (users[i].pin && String(users[i].pin) === String(entered)) {
-      matchedUser = users[i];
-      break;
-    }
-  }
-
-  if (!matchedUser) {
-    _pinAttempts++;
-    if (_pinAttempts >= 5) {
-      pinShakeError('Too many attempts. Try again later.');
-      setTimeout(closePinPad, 1500);
-    } else {
-      pinShakeError('Incorrect PIN. Try again.');
-    }
-    return;
-  }
-
-  // PIN matched — complete the task
-  closePinPad();
-  var taskId = _pinTaskId;
-  showToast('✓ Completed by ' + matchedUser.name, 'success');
-  // Call the actual toggle
-  toggleTaskAndRefresh(taskId, matchedUser.id);
-}
-
-// ── Override toggleTaskAndRefresh to intercept checkbox taps ──────────────────
-// On mobile, tapping the checkbox now opens PIN pad instead of toggling directly
-// On desktop, same behavior (directors will use it too)
-(function() {
-  var _origToggle = window.toggleTaskAndRefresh;
-  window.toggleTaskAndRefresh = function(taskId, bypassUserId) {
-    var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
-    if (!task) return;
-
-    // If already done, allow un-checking without PIN (un-complete is low-risk)
-    if (task.done) {
-      _origToggle(taskId);
-      return;
-    }
-
-    // If called with a bypassUserId (from PIN confirmation), go straight through
-    if (bypassUserId) {
-      _origToggle(taskId);
-      return;
-    }
-
-    // Check if any users have PINs set up
-    var anyPins = users.some(function(u) { return u.pin && String(u.pin).length === 6; });
-    if (!anyPins) {
-      // No PINs configured yet — just toggle normally with a hint
-      _origToggle(taskId);
-      showToast('Tip: set up PINs in Team Members to require verification', '');
-      return;
-    }
-
-    // Open PIN pad
-    openPinPad(taskId);
-  };
-})();
-
-// ── PIN field in user modal ────────────────────────────────────────────────────
-// Override saveUser to also capture the PIN field
-(function() {
-  var _origSave = window.saveUser;
-  window.saveUser = async function() {
-    // Grab PIN from the modal field before calling original
-    var pinVal = document.getElementById('uPin') ? document.getElementById('uPin').value.trim() : '';
-    if (pinVal && (pinVal.length !== 6 || !/^\d{6}$/.test(pinVal))) {
-      showToast('PIN must be exactly 6 digits', 'error');
-      return;
-    }
-    // Temporarily stash pin so original saveUser can pick it up
-    window._pendingPin = pinVal || null;
-    await _origSave();
-    window._pendingPin = null;
-  };
-})();
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ROLLING 3-MONTH AUTO-POPULATE
-// For every recurring task, ensure occurrences exist exactly 3 months ahead
-// of today. Runs on load and daily. When a new date crosses into range, that
-// occurrence is created and written to Supabase.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Days between occurrences for each frequency
-var FREQ_DAYS = {
-  daily:      1,
-  weekly:     7,
-  biweekly:  14,
-  monthly:   null, // handled separately
-  quarterly: null,
-  yearly:    null
-};
-
-// Returns the next occurrence date after `fromDate` for a given frequency
-function nextOccurrenceAfter(fromDate, freq) {
-  var d = new Date(fromDate);
-  switch(freq) {
-    case 'daily':     d.setDate(d.getDate() + 1); break;
-    case 'weekly':    d.setDate(d.getDate() + 7); break;
-    case 'biweekly':  d.setDate(d.getDate() + 14); break;
-    case 'monthly':   d.setMonth(d.getMonth() + 1); break;
-    case 'quarterly': d.setMonth(d.getMonth() + 3); break;
-    case 'yearly':    d.setFullYear(d.getFullYear() + 1); break;
-    default: return null;
-  }
-  return d;
-}
-
-// The horizon date is exactly 3 months from today
-function getHorizonDate() {
-  var h = new Date(TODAY_Y, TODAY_M, TODAY_D);
-  h.setMonth(h.getMonth() + 3);
-  return h;
-}
-
-// Returns true if a task occurrence already exists on a given date
-function occurrenceExists(templateTask, day, month, year) {
-  return tasks.some(function(t) {
-    return t.name === templateTask.name &&
-           t.freq === templateTask.freq &&
-           t.cat  === templateTask.cat  &&
-           t.day === day && t.month === month && t.year === year;
-  });
-}
-
-// For a single recurring task, find its latest scheduled occurrence
-// and generate any missing ones up to the 3-month horizon
-function populateRecurring(task, horizon, toInsert) {
-  if (!task.freq || task.freq === 'custom') return;
-
-  // Find all existing occurrences of this task (same name+freq+cat)
-  var siblings = tasks.filter(function(t) {
-    return t.name === task.name && t.freq === task.freq && t.cat === task.cat;
-  }).sort(function(a, b) {
-    return new Date(a.year, a.month, a.day) - new Date(b.year, b.month, b.day);
-  });
-
-  if (!siblings.length) return;
-  var latest = siblings[siblings.length - 1];
-  var latestDate = new Date(latest.year, latest.month, latest.day);
-
-  // Walk forward from latest until we've covered the horizon
-  var cur = latestDate;
-  var safety = 0;
-  while (safety++ < 500) {
-    var next = nextOccurrenceAfter(cur, task.freq);
-    if (!next) break;
-    if (next > horizon) break;
-    var nd = next.getDate(), nm = next.getMonth(), ny = next.getFullYear();
-    if (!occurrenceExists(task, nd, nm, ny)) {
-      var newTask = {
-        id:            nextId++,
-        name:          task.name,
-        freq:          task.freq,
-        cat:           task.cat,
-        day:           nd,
-        month:         nm,
-        year:          ny,
-        done:          false,
-        assignId:      task.assignId || 0,
-        summary:       task.summary  || '',
-        steps:         task.steps    || '',
-        customPattern: task.customPattern || ''
-      };
-      tasks.push(newTask);
-      toInsert.push(newTask);
-    }
-    cur = next;
-  }
-}
-
-async function autoPopulateAll() {
-  var horizon   = getHorizonDate();
-  var toInsert  = [];
-
-  // Deduplicate by name+freq+cat — only process each unique task template once
-  var seen = {};
-  tasks.slice().forEach(function(task) {
-    if (!task.freq || task.freq === 'custom') return;
-    var key = task.name + '||' + task.freq + '||' + task.cat;
-    if (seen[key]) return;
-    seen[key] = true;
-    populateRecurring(task, horizon, toInsert);
-  });
-
-  if (toInsert.length === 0) return;
-  console.log('[autopop] Adding', toInsert.length, 'occurrences up to', horizon.toDateString());
-
-  // Re-render with new tasks
-  renderCal(); updateStats();
-
-  // Write all new occurrences to Supabase in one batch
-  if (sbReady && toInsert.length > 0) {
-    var rows = toInsert.map(function(t) {
-      return {
-        name:      t.name,
-        freq:      t.freq,
-        cat:       t.cat,
-        day:       t.day,
-        month:     t.month,
-        year:      t.year,
-        done:      false,
-        assign_id: t.assignId || 0,
-        summary:   t.summary  || '',
-        steps:     t.steps    || ''
-      };
-    });
-    sbWrite('Auto-populate occurrences', async function() {
-      // Insert in batches of 20 to avoid URL length limits
-      for (var i = 0; i < rows.length; i += 20) {
-        var batch = rows.slice(i, i + 20);
-        await sbPost('tasks', batch);
-      }
-    });
-  }
-}
-
-// Run auto-populate after init, then check daily
-// Uses a date stamp in localStorage to avoid re-running multiple times per day
-var _lastAutoPopDate = '';
-function scheduleAutoPopulate() {
-  var _tn=new Date(); var today = _tn.getFullYear()+'-'+_tn.getMonth()+'-'+_tn.getDate();
-  var lastRun = localStorage.getItem('cfa_autopop_date');
-  if (lastRun !== today) {
-    // New day (or first run) — populate now
-    setTimeout(function() {
-      autoPopulateAll().then(function() {
-        localStorage.setItem('cfa_autopop_date', today);
-      });
-    }, 1000); // slight delay so Supabase data is loaded first
-  }
-  // Also schedule a check every hour in case the app stays open overnight
-  setInterval(function() {
-    var newDay = TODAY_Y + '-' + TODAY_M + '-' + TODAY_D;
-    if (newDay !== today) {
-      today = newDay;
-      autoPopulateAll().then(function() {
-        localStorage.setItem('cfa_autopop_date', today);
-      });
-    }
-  }, 3600000); // 1 hour
-}
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// CATEGORY EDITOR
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function renderCatEditor() {
-  var list = document.getElementById('catEditorList');
-  if (!list) return;
-  var keys = Object.keys(CAT);
-  if (!keys.length) {
-    list.innerHTML = '<div style="font-size:13px;color:var(--text3);font-style:italic;padding:4px 0;">No categories yet. Add one below.</div>';
-    return;
-  }
-  list.innerHTML = keys.map(function(key) {
-    var c = CAT[key];
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">'
-      + '<div style="width:14px;height:14px;border-radius:3px;background:' + c.dot + ';flex-shrink:0;"></div>'
-      + '<input style="flex:1;border:1px solid var(--border-md);border-radius:6px;padding:7px 10px;font-size:14px;font-family:var(--font-body);outline:none;" '
-      +   'value="' + c.label + '" '
-      +   'onchange="renameCategory(\'' + key + '\', this.value)" '
-      +   'onblur="renameCategory(\'' + key + '\', this.value)">'
-      + '<button onclick="deleteCategory(\'' + key + '\')" style="background:var(--red-light);color:var(--red);border:1px solid var(--red-mid);border-radius:6px;padding:7px 12px;cursor:pointer;font-size:13px;min-height:36px;white-space:nowrap;">Delete</button>'
-      + '</div>';
-  }).join('');
-}
-
-function renderCatLegend() {
-  var legend = document.getElementById('catLegend');
-  if (!legend) return;
-  var html = '<div style="padding:4px 12px 8px;">'
-    + '<div class="sidebar-label">Categories</div>'
-    + Object.keys(CAT).map(function(key) {
-        var c = CAT[key];
-        return '<div class="cat-dot-row"><div class="cat-dot" style="background:' + c.dot + ';"></div><span>' + c.label + '</span></div>';
-      }).join('')
-    + '</div>';
-  legend.innerHTML = html;
-}
-
-function renderHistoryFilters() {
-  var el = document.getElementById('historyFilters');
-  if (!el) return;
-  el.innerHTML = '<button class="filter-btn active" onclick="filterHistory(\'all\',this)">All</button>'
-    + Object.keys(CAT).map(function(key) {
-        var c = CAT[key];
-        return '<button class="filter-btn" onclick="filterHistory(\'' + key + '\',this)">'
-          + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c.dot + ';margin-right:4px;vertical-align:middle;"></span>'
-          + c.label + '</button>';
-      }).join('');
-}
-
-function refreshCategoryUI() {
-  renderCatLegend();
-  renderHistoryFilters();
-  populateSelects();    // update task add/edit dropdowns
-  renderCal();          // re-render calendar chips
-  updateStats();
-}
-
-function addCategory() {
-  var input = document.getElementById('newCatName');
-  var name  = input.value.trim();
-  if (!name) { showToast('Enter a category name', 'error'); return; }
-
-  // Generate a key from the name (lowercase, no spaces)
-  var key = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
-  if (!key) { showToast('Name must contain letters or numbers', 'error'); return; }
-  if (CAT[key]) { showToast('A category with that name already exists', 'error'); return; }
-
-  // Pick next colour from palette
-  var palette = CAT_PALETTE;
-  var usedCount = Object.keys(CAT).length;
-  var colours = palette[usedCount % palette.length];
-
-  CAT[key] = { label: name, bg: colours.bg, text: colours.text, dot: colours.dot, border: colours.border };
-  saveCats();
-  input.value = '';
-  renderCatEditor();
-  refreshCategoryUI();
-  showToast('"' + name + '" category added', 'success');
-}
-
-function renameCategory(key, newLabel) {
-  newLabel = newLabel.trim();
-  if (!newLabel || !CAT[key]) return;
-  if (CAT[key].label === newLabel) return; // no change
-  CAT[key].label = newLabel;
-  saveCats();
-  renderCatLegend();
-  renderHistoryFilters();
-  populateSelects();
-  renderCal();
-  showToast('Category renamed', 'success');
-}
-
-function deleteCategory(key) {
-  if (!CAT[key]) return;
-  var label = CAT[key].label;
-
-  // Check if any tasks use this category
-  var inUse = tasks.filter(function(t) { return t.cat === key; }).length;
-  var msg = inUse > 0
-    ? 'Delete "' + label + '"? ' + inUse + ' task(s) use this category and will show as unlabelled.'
-    : 'Delete "' + label + '" category?';
-
-  if (!confirm(msg)) return;
-
-  delete CAT[key];
-  saveCats();
-  renderCatEditor();
-  refreshCategoryUI();
-  showToast('"' + label + '" removed', '');
-}
-
-// ── Call renderCatEditor when Settings view is opened ────────────────────────
-(function() {
-  var _orig = switchView;
-  window.switchView = function(v) {
-    _orig(v);
-    if (v === 'settings') renderCatEditor();
-  };
-})();
-
-// Initial renders on load
-setTimeout(function() {
-  renderCatLegend();
-  renderHistoryFilters();
-}, 10);
-
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SETTINGS SYNC — reads/writes to Supabase app_settings table
-// One row per setting key. All devices share the same rows.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Load all settings from Supabase and apply them
-async function loadRemoteSettings() {
-  try {
-    var rows = await sbGet('app_settings?select=key,value');
-    if (!rows || !rows.length) return;
-
-    var map = {};
-    rows.forEach(function(r) { map[r.key] = r.value; });
-
-    // Categories
-    if (map['cats']) {
-      try {
-        var parsed = JSON.parse(map['cats']);
-        if (parsed && typeof parsed === 'object') {
-          CAT = parsed;
-          saveCats(); // mirror to localStorage as cache
-          refreshCategoryUI();
-        }
-      } catch(e) { console.warn('[settings] cats parse error:', e.message); }
-    }
-
-    // Store info
-    if (map['store_num']) {
-      var sn = document.getElementById('storeNum');
-      if (sn) sn.value = map['store_num'];
-      localStorage.setItem('storeNum', map['store_num']);
-    }
-    if (map['store_loc']) {
-      var sl = document.getElementById('storeLoc');
-      if (sl) sl.value = map['store_loc'];
-      localStorage.setItem('storeLoc', map['store_loc']);
-    }
-
-    // AI instructions
-    if (map['ai_instructions']) {
-      var ai = document.getElementById('aiInstructions');
-      if (ai) ai.value = map['ai_instructions'];
-      localStorage.setItem('aiInstructions', map['ai_instructions']);
-    }
-
-    // Grok API key — store in localStorage only (security), don't sync to DB
-    // (key stays device-local intentionally)
-
-    // Email toggle
-    if (map['email_enabled'] !== undefined) {
-      var tog = document.getElementById('toggle-email');
-      if (tog) {
-        if (map['email_enabled'] === 'true') tog.classList.add('on');
-        else tog.classList.remove('on');
-      }
-    }
-
-    console.log('[settings] loaded from Supabase:', Object.keys(map).length, 'keys');
-  } catch(err) {
-    console.warn('[settings] load failed, using local:', err.message);
-  }
-}
-
-// Write a single setting key to Supabase (upsert)
-async function saveRemoteSetting(key, value) {
-  if (!sbReady) return;
-  try {
-    await sbFetch('app_settings?key=eq.' + key, {
-      method: 'POST',
-      headers: Object.assign({}, SB_HDRS, {
-        'Prefer': 'return=minimal,resolution=merge-duplicates'
-      }),
-      body: JSON.stringify({ key: key, value: String(value) })
-    });
-  } catch(err) {
-    console.warn('[settings] save failed for', key, ':', err.message);
-  }
-}
-
-// Override saveCats to also sync to Supabase
-(function() {
-  var _origSaveCats = window.saveCats;
-  window.saveCats = function() {
-    _origSaveCats();
-    saveRemoteSetting('cats', JSON.stringify(CAT));
-  };
-})();
-
-// Override saveStoreSettings to also sync to Supabase
-(function() {
-  var _origSave = window.saveStoreSettings;
-  window.saveStoreSettings = function() {
-    _origSave();
-    var sn = document.getElementById('storeNum').value;
-    var sl = document.getElementById('storeLoc').value;
-    saveRemoteSetting('store_num', sn);
-    saveRemoteSetting('store_loc', sl);
-  };
-})();
-
-// Override saveInstructions to also sync to Supabase
-(function() {
-  var _origSaveInstr = window.saveInstructions;
-  window.saveInstructions = function() {
-    _origSaveInstr();
-    var val = document.getElementById('aiInstructions').value;
-    saveRemoteSetting('ai_instructions', val);
-  };
-})();
-
-// Sync email toggle on change
-(function() {
-  var tog = document.getElementById('toggle-email');
-  if (tog) {
-    var _origClick = tog.onclick;
-    tog.onclick = function() {
-      this.classList.toggle('on');
-      saveRemoteSetting('email_enabled', this.classList.contains('on') ? 'true' : 'false');
-    };
-  }
-})();
-
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// INSTRUCTIONS FULL-SCREEN VIEW
-// ═══════════════════════════════════════════════════════════════════════════════
-
-var _instrTaskId = null;
-
-function openInstrView(taskId) {
-  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
-  if (!task) return;
-  _instrTaskId = String(taskId);
-
-  var c = CAT[task.cat] || CAT.equipment;
-
-  // Header
-  document.getElementById('instrViewTitle').textContent = task.name;
-  var catEl = document.getElementById('instrViewCat');
-  catEl.textContent = catLabel(task.cat);
-  catEl.style.background = c.bg;
-  catEl.style.color = c.text;
-
-  // Body
-  renderInstrBody(task);
-
-  // Open with slide animation
-  document.getElementById('instrView').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeInstrView() {
-  document.getElementById('instrView').classList.remove('open');
-  document.body.style.overflow = '';
-  _instrTaskId = null;
-}
-
-function openEditFromInstr() {
-  if (!_instrTaskId) return;
-  closeInstrView();
-  setTimeout(function() { openEditModal(_instrTaskId); }, 300);
-}
-
-function renderInstrBody(task) {
-  var body = document.getElementById('instrViewBody');
-  if (!body) return;
-  var html = '';
-
-  // Summary
-  if (task.summary) {
-    html += '<div class="instr-section-lbl">Summary</div>';
-    html += '<div class="instr-summary-box">' + escapeHtml(task.summary) + '</div>';
-  }
-
-  // Step-by-step
-  if (task.steps) {
-    html += '<div class="instr-section-lbl">Step-by-Step</div>';
-    var steps = task.steps.split('\n').filter(function(s) { return s.trim(); });
-    steps.forEach(function(s, i) {
-      var colonIdx = s.indexOf(':');
-      var text = colonIdx > -1 ? s.slice(colonIdx + 1).trim() : s.trim();
-      html += '<div class="instr-step-row">'
-        + '<div class="instr-step-num">' + (i + 1) + '</div>'
-        + '<div class="instr-step-text">' + escapeHtml(text) + '</div>'
-        + '</div>';
-    });
-  }
-
-  // Media (photos + videos)
-  html += '<div class="instr-section-lbl">Photos & Video</div>';
-  var media = getTaskMedia(task);
-  if (media.length > 0) {
-    html += '<div class="instr-media-grid">';
-    media.forEach(function(m) {
-      var isVideo = m.url.match(/\.(mp4|mov|webm|m4v)/i);
-      var safeUrl = encodeURIComponent(m.url);
-      html += '<div class="instr-media-item" data-mediaurl="' + safeUrl + '" data-taskid="' + String(task.id) + '">';
-      if (isVideo) {
-        html += '<video src="' + m.url + '" preload="metadata" muted playsinline></video>';
-      } else {
-        html += '<img src="' + m.url + '" alt="media">';
-      }
-      html += '<button class="instr-media-del" data-action="deletemedia" data-mediaurl="' + safeUrl + '" data-taskid="' + String(task.id) + '">×</button>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-
-  // Upload button — camera + file options
-  html += '<button class="instr-upload-btn" data-instr-action="upload" data-tid="' + String(task.id) + '" style="margin-top:' + (media.length > 0 ? '10px' : '0') + ';">'
-    + '<span style="font-size:18px;">📷</span> Add photo or video'
-    + '</button>';
-  html += '<div id="instrUploadStatus" style="margin-top:6px;"></div>';
-
-  body.innerHTML = html;
-}
-
-// Get all media URLs for a task (photo_url + any additional media stored in media_urls)
-function getTaskMedia(task) {
-  var media = [];
-  if (task._photoUrl) media.push({ url: task._photoUrl });
-  if (task._mediaUrls) {
-    try {
-      var extra = typeof task._mediaUrls === 'string' ? JSON.parse(task._mediaUrls) : task._mediaUrls;
-      if (Array.isArray(extra)) {
-        extra.forEach(function(u) {
-          if (u && u !== task._photoUrl) media.push({ url: u });
-        });
-      }
-    } catch(e) {}
-  }
-  return media;
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-// Upload photo or video from instructions view
-function triggerInstrUpload(taskId) {
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*,video/*';
-  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-    input.capture = 'environment';
-  }
-  input.onchange = function() {
-    if (input.files && input.files[0]) uploadInstrMedia(taskId, input.files[0]);
-  };
-  document.body.appendChild(input);
-  input.click();
-  setTimeout(function() { if (input.parentNode) input.parentNode.removeChild(input); }, 5000);
-}
-
-async function uploadInstrMedia(taskId, file) {
-  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
-  if (!task) return;
-
-  var statusEl = document.getElementById('instrUploadStatus');
-  if (statusEl) statusEl.innerHTML = '<div class="instr-uploading">⏳ Uploading...</div>';
-
-  var isVideo = file.type.startsWith('video/');
-  var maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
-  if (file.size > maxSize) {
-    showToast('File too large (max ' + (isVideo ? '100MB video' : '10MB image') + ')', 'error');
-    if (statusEl) statusEl.innerHTML = '';
-    return;
-  }
-
-  try {
-    var ext  = file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg');
-    var path = taskId + '/' + Date.now() + '.' + ext;
-
-    var uploadRes = await fetch(SB_STORAGE_URL + '/object/task-photos/' + path, {
-      method: 'POST',
-      headers: {
-        'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
-        'Content-Type': file.type, 'Cache-Control': '3600', 'x-upsert': 'true'
-      },
-      body: file
-    });
-
-    if (!uploadRes.ok) throw new Error('Upload HTTP ' + uploadRes.status);
-
-    var publicUrl = 'https://cjgoaufrfhsndfirkdxt.supabase.co/storage/v1/object/public/task-photos/' + path;
-
-    // First photo goes to photo_url, additional go to media_urls array
-    if (!task._photoUrl) {
-      task._photoUrl = publicUrl;
-      if (sbReady) sbWrite('Save photo', function() { return sbPatch('tasks?id=eq.' + taskId, { photo_url: publicUrl }); });
-    } else {
-      var existing = [];
-      try { existing = task._mediaUrls ? JSON.parse(task._mediaUrls) : []; } catch(e) {}
-      existing.push(publicUrl);
-      task._mediaUrls = JSON.stringify(existing);
-      if (sbReady) sbWrite('Save media', function() { return sbPatch('tasks?id=eq.' + taskId, { media_urls: task._mediaUrls }); });
-    }
-
-    if (statusEl) statusEl.innerHTML = '';
-    renderInstrBody(task);
-    showToast('Media uploaded', 'success');
-
-  } catch(err) {
-    console.error('[instr upload]', err.message);
-    if (statusEl) statusEl.innerHTML = '';
-    showToast('Upload failed: ' + err.message, 'error');
-  }
-}
-
-async function deleteInstrMedia(url, taskId) {
-  if (!confirm('Remove this photo/video?')) return;
-  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
-  if (!task) return;
-
-  var path = url.split('/task-photos/')[1];
-
-  // Remove from task object
-  if (task._photoUrl === url) {
-    task._photoUrl = null;
-    if (sbReady) sbWrite('Clear photo', function() { return sbPatch('tasks?id=eq.' + taskId, { photo_url: null }); });
-  } else {
-    try {
-      var arr = task._mediaUrls ? JSON.parse(task._mediaUrls) : [];
-      arr = arr.filter(function(u) { return u !== url; });
-      task._mediaUrls = JSON.stringify(arr);
-      if (sbReady) sbWrite('Update media', function() { return sbPatch('tasks?id=eq.' + taskId, { media_urls: task._mediaUrls }); });
-    } catch(e) {}
-  }
-
-  // Delete from storage
-  try {
-    await fetch(SB_STORAGE_URL + '/object/task-photos/' + path, {
-      method: 'DELETE',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
-    });
-  } catch(e) { console.warn('Storage delete:', e.message); }
-
-  renderInstrBody(task);
-  showToast('Removed', '');
-}
-
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PHOTO / VIDEO — MODAL + MANAGE ROWS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Render the photo grid inside the edit modal
-function renderModalPhotoGrid(task) {
-  var grid   = document.getElementById('modalPhotoGrid');
-  var btn    = document.getElementById('modalPhotoBtn');
-  if (!grid || !task) return;
-  var media  = getTaskMedia(task);
-  grid.innerHTML = media.map(function(m) {
-    var isVideo = /\.(mp4|mov|webm|m4v)/i.test(m.url);
-    var safe    = encodeURIComponent(m.url);
-    return '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);aspect-ratio:4/3;background:var(--bg2);">'
-      + (isVideo
-          ? '<video src="' + m.url + '" preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>'
-          : '<img src="' + m.url + '" style="width:100%;height:100%;object-fit:cover;" alt="">')
-      + '<button data-action="deletemedia" data-mediaurl="' + safe + '" data-taskid="' + task.id + '" '
-      +   'style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.55);color:white;border:none;'
-      +   'border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;'
-      +   'display:flex;align-items:center;justify-content:center;">×</button>'
-      + '</div>';
-  }).join('');
-  // Update the upload button data-tid
-  if (btn) btn.dataset.tid = task.id;
-}
-
-// Camera/file picker triggered from edit modal
-function triggerModalUpload(taskId) {
-  var input = document.createElement('input');
-  input.type   = 'file';
-  input.accept = 'image/*,video/*';
-  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) input.capture = 'environment';
-  input.onchange = function() {
-    if (input.files && input.files[0]) uploadModalMedia(taskId, input.files[0]);
-  };
-  document.body.appendChild(input);
-  input.click();
-  setTimeout(function() { if (input.parentNode) input.parentNode.removeChild(input); }, 5000);
-}
-
-async function uploadModalMedia(taskId, file) {
-  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
-  if (!task) return;
-
-  var statusEl = document.getElementById('modalUploadStatus');
-  if (statusEl) statusEl.textContent = 'Uploading...';
-
-  var isVideo = file.type.startsWith('video/');
-  var maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
-  if (file.size > maxSize) {
-    showToast('File too large (max ' + (isVideo ? '100MB video' : '10MB image') + ')', 'error');
-    if (statusEl) statusEl.textContent = '';
-    return;
-  }
-
-  try {
-    var ext  = file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg');
-    var path = taskId + '/' + Date.now() + '.' + ext;
-    var uploadRes = await fetch(SB_STORAGE_URL + '/object/task-photos/' + path, {
-      method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
-                 'Content-Type': file.type, 'Cache-Control': '3600', 'x-upsert': 'true' },
-      body: file
-    });
-    if (!uploadRes.ok) throw new Error('HTTP ' + uploadRes.status);
-
-    var publicUrl = 'https://cjgoaufrfhsndfirkdxt.supabase.co/storage/v1/object/public/task-photos/' + path;
-
-    if (!task._photoUrl) {
-      task._photoUrl = publicUrl;
-      if (sbReady) sbWrite('Photo', function() { return sbPatch('tasks?id=eq.' + taskId, { photo_url: publicUrl }); });
-    } else {
-      var arr = [];
-      try { arr = task._mediaUrls ? JSON.parse(task._mediaUrls) : []; } catch(e) {}
-      arr.push(publicUrl);
-      task._mediaUrls = JSON.stringify(arr);
-      if (sbReady) sbWrite('Media', function() { return sbPatch('tasks?id=eq.' + taskId, { media_urls: task._mediaUrls }); });
-    }
-
-    if (statusEl) statusEl.textContent = '';
-    renderModalPhotoGrid(task);
-    showToast('Uploaded ✓', 'success');
-  } catch(err) {
-    if (statusEl) statusEl.textContent = '';
-    showToast('Upload failed: ' + err.message, 'error');
-  }
-}
-
-// Delete media triggered from modal photo grid (reuses deleteInstrMedia)
-// The data-action="deletemedia" on the × button is caught by handleInstrAction
-// which calls deleteInstrMedia — after delete we re-render the modal grid too
-(function() {
-  var _origDelete = window.deleteInstrMedia;
-  window.deleteInstrMedia = async function(url, taskId) {
-    await _origDelete(url, taskId);
-    // Also refresh modal grid if modal is open
-    var modal = document.getElementById('taskModal');
-    if (modal && modal.style.display !== 'none') {
-      var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
-      if (task) renderModalPhotoGrid(task);
-    }
-  };
-})();
-
-// Quick photo upload from Manage Tasks row — opens instr view then uploads
-// Simpler: just trigger file picker directly and upload to that task
-function triggerManagePhoto(taskId) {
-  var input = document.createElement('input');
-  input.type   = 'file';
-  input.accept = 'image/*,video/*';
-  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) input.capture = 'environment';
-  input.onchange = function() {
-    if (input.files && input.files[0]) {
-      showToast('Uploading...', '');
-      uploadModalMedia(taskId, input.files[0]).then(function() {
-        renderManage(); // refresh manage view after upload
-      });
-    }
-  };
-  document.body.appendChild(input);
-  input.click();
-  setTimeout(function() { if (input.parentNode) input.parentNode.removeChild(input); }, 5000);
-}
-
-
-</script>
-</body>
-</html>
+    // Handle xAI (OpenAI) format: choices[0].message.content
+    const rawText = (data.choices && data.choices[0])
+      ? (data.choices[0].message.content || '').trim()
+      : (data.content ? data.content.map(b => b.text || '').join('') : '').trim();
+    const jsonText = rawText.replace(/^```json\s*/, '').replace(/```\s*$/, '').trim();>
