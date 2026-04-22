@@ -900,8 +900,8 @@ body {
   /* Stats strip */
   .stats-strip { display: flex; }
 
-  /* Bottom nav */
-  .bottom-nav { display: flex; }
+  /* Bottom nav — flex-direction:column keeps ::after spacer below items */
+  .bottom-nav { display: flex; flex-direction: column; align-items: stretch; }
 
   /* Sidebar hidden on mobile (overlay mode) */
   .sidebar {
@@ -2341,7 +2341,7 @@ function renderManage(){
   const upEl=document.getElementById('manageUpcoming');
   upEl.innerHTML=upcoming.length?upcoming.map(task=>{
     const c=CAT[task.cat]||CAT.equipment;
-    return `<div class="manage-task-row" style="flex-wrap:wrap;gap:6px;padding:10px 0;">
+    return `<div class="manage-task-row" style="flex-wrap:wrap;gap:6px;padding:10px 0;" data-tid="${task.id}">
       <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
         <div class="cat-dot" style="background:${c.dot};border-radius:3px;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;">
@@ -2350,9 +2350,9 @@ function renderManage(){
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="openEditModal(${task.id})">✏️ Edit</button>
-        <button class="btn-amber" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="openReschedModal(${task.id})">📅 Resched</button>
-        ${(task.summary||task.steps)?`<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="openInstrView(${task.id})">📋 Steps</button>`:''}
+        <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="edit" data-tid="${task.id}">✏️ Edit</button>
+        <button class="btn-amber" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="resched" data-tid="${task.id}">📅 Resched</button>
+        ${(task.summary||task.steps)?`<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="instr" data-tid="${task.id}">📋 Steps</button>`:''}
       </div>
     </div>`;
   }).join(''):`<div class="no-tasks">All tasks complete 🎉</div>`;
@@ -2361,7 +2361,7 @@ function renderManage(){
   const sorted=tasks.slice().sort((a,b)=>new Date(a.year,a.month,a.day)-new Date(b.year,b.month,b.day));
   allEl.innerHTML=sorted.map(task=>{
     const c=CAT[task.cat]||CAT.equipment;
-    return `<div class="manage-task-row" style="flex-wrap:wrap;gap:6px;padding:10px 0;${task.done?'opacity:0.55;':''}">
+    return `<div class="manage-task-row" style="flex-wrap:wrap;gap:6px;padding:10px 0;${task.done?'opacity:0.55;':''}" data-tid="${task.id}">
       <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
         <div class="cat-dot" style="background:${c.dot};border-radius:3px;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;">
@@ -2370,8 +2370,8 @@ function renderManage(){
         </div>
       </div>
       <div style="display:flex;gap:6px;">
-        <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="openEditModal(${task.id})">✏️ Edit</button>
-        <button class="btn-danger" style="padding:6px 10px;font-size:12px;min-height:34px;" onclick="confirmDelete(${task.id})">🗑</button>
+        <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="edit" data-tid="${task.id}">✏️ Edit</button>
+        <button class="btn-danger" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="delete" data-tid="${task.id}">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -3109,28 +3109,55 @@ function handleTaskAction(e) {
 }
 
 // Attach delegated listener to both panel containers once on load
+function handleManageAction(e) {
+  var el = e.target.closest('[data-manage-action]');
+  if (!el) return;
+  e.stopPropagation();
+  var action = el.getAttribute('data-manage-action');
+  var tid    = el.getAttribute('data-tid');
+  switch(action) {
+    case 'edit':   openEditModal(tid); break;
+    case 'resched': openReschedModal(tid); break;
+    case 'instr':  openInstrView(tid); break;
+    case 'delete': confirmDelete(tid); break;
+  }
+}
+
+function handleInstrAction(e) {
+  // Upload button inside instrViewBody
+  var uploadBtn = e.target.closest('[data-instr-action="upload"]');
+  if (uploadBtn) {
+    e.stopPropagation();
+    triggerInstrUpload(uploadBtn.getAttribute('data-tid'));
+    return;
+  }
+  // Media items (view/delete)
+  var mediaEl = e.target.closest('[data-mediaurl]');
+  if (!mediaEl) return;
+  e.stopPropagation();
+  var url    = decodeURIComponent(mediaEl.getAttribute('data-mediaurl'));
+  var taskId = mediaEl.getAttribute('data-taskid');
+  if (mediaEl.getAttribute('data-action') === 'deletemedia') {
+    deleteInstrMedia(url, taskId);
+  } else {
+    openPhotoLightbox(url);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-  var panels = ['dayPanelList', 'daySheetList'];
-  panels.forEach(function(id) {
+  // Day panel buttons
+  ['dayPanelList', 'daySheetList'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', handleTaskAction);
   });
-  // Media click delegation in instructions view
+  // Manage view buttons
+  ['manageUpcoming', 'manageDelete'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', handleManageAction);
+  });
+  // Instructions view (upload + media)
   var instrBody = document.getElementById('instrViewBody');
-  if (instrBody) {
-    instrBody.addEventListener('click', function(e) {
-      var el = e.target.closest('[data-mediaurl]');
-      if (!el) return;
-      e.stopPropagation();
-      var url    = decodeURIComponent(el.getAttribute('data-mediaurl'));
-      var taskId = el.getAttribute('data-taskid');
-      if (el.getAttribute('data-action') === 'deletemedia') {
-        deleteInstrMedia(url, taskId);
-      } else {
-        openPhotoLightbox(url);
-      }
-    });
-  }
+  if (instrBody) instrBody.addEventListener('click', handleInstrAction);
 });
 
 // ── Day panel: mobile bottom sheet ──────────────────────
@@ -4794,7 +4821,7 @@ function renderInstrBody(task) {
   }
 
   // Upload button — camera + file options
-  html += '<button class="instr-upload-btn" id="instrUploadBtn" onclick="triggerInstrUpload(' + String(task.id) + ')" style="margin-top:' + (media.length > 0 ? '10px' : '0') + ';">'
+  html += '<button class="instr-upload-btn" data-instr-action="upload" data-tid="' + String(task.id) + '" style="margin-top:' + (media.length > 0 ? '10px' : '0') + ';">'
     + '<span style="font-size:18px;">📷</span> Add photo or video'
     + '</button>';
   html += '<div id="instrUploadStatus" style="margin-top:6px;"></div>';
