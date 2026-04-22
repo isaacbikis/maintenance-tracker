@@ -1588,6 +1588,14 @@ body {
     </div>
     <div class="form-field"><label class="form-label" data-i18n="date">Date</label><input class="form-input" id="mTaskDate" type="date"></div>
     <div class="form-field"><label class="form-label" data-i18n="assign_to">Assign to</label><select class="form-input" id="mTaskAssign" onchange="previewAssignEmail()"><option value="0">—</option></select><div class="assign-preview" id="assignPreview"></div></div>
+    <div class="form-field" id="modalPhotoSection" style="display:none;">
+      <label class="form-label">Photos &amp; Video</label>
+      <div id="modalPhotoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:8px;"></div>
+      <button class="instr-upload-btn" id="modalPhotoBtn" data-instr-action="modal-upload" style="font-size:13px;padding:10px;">
+        <span style="font-size:16px;">📷</span> Add photo or video
+      </button>
+      <div id="modalUploadStatus" style="font-size:12px;color:var(--text3);margin-top:4px;"></div>
+    </div>
     <div class="modal-footer"><button class="btn-ghost" onclick="closeModal()" data-i18n="cancel">Cancel</button><button class="btn-primary" onclick="saveModalTask()" data-i18n="save_task">Save task</button></div>
   </div>
 </div>
@@ -2353,6 +2361,7 @@ function renderManage(){
         <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="edit" data-tid="${task.id}">✏️ Edit</button>
         <button class="btn-amber" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="resched" data-tid="${task.id}">📅 Resched</button>
         ${(task.summary||task.steps)?`<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="instr" data-tid="${task.id}">📋 Steps</button>`:''}
+        <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="photo" data-tid="${task.id}">📷</button>
       </div>
     </div>`;
   }).join(''):`<div class="no-tasks">All tasks complete 🎉</div>`;
@@ -2371,6 +2380,7 @@ function renderManage(){
       </div>
       <div style="display:flex;gap:6px;">
         <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="edit" data-tid="${task.id}">✏️ Edit</button>
+        <button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="photo" data-tid="${task.id}">📷</button>
         <button class="btn-danger" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="delete" data-tid="${task.id}">🗑</button>
       </div>
     </div>`;
@@ -2523,6 +2533,8 @@ function openAddModalForDate(dateStr){
   document.getElementById('mTaskName').value='';
   document.getElementById('mTaskSummary').value='';
   document.getElementById('mTaskSteps').value='';
+  // Hide photo section for new tasks (need task ID first)
+  document.getElementById('modalPhotoSection').style.display='none';
   document.getElementById('mTaskFreq').value='monthly';
   document.getElementById('mTaskCat').value='fryer';
   document.getElementById('mTaskDate').value=dateStr;
@@ -2537,6 +2549,10 @@ function openEditModal(id){
   document.getElementById('mTaskName').value=task.name;
   document.getElementById('mTaskSummary').value=task.summary||'';
   document.getElementById('mTaskSteps').value=task.steps||'';
+  // Show photo section for existing tasks and render current media
+  document.getElementById('modalPhotoSection').style.display='';
+  document.getElementById('modalPhotoBtn').dataset.tid = task.id;
+  renderModalPhotoGrid(task);
   document.getElementById('mTaskFreq').value=task.freq;
   document.getElementById('mTaskCat').value=task.cat;
   const mm=String(task.month+1).padStart(2,'0'),dd=String(task.day).padStart(2,'0');
@@ -3116,15 +3132,23 @@ function handleManageAction(e) {
   var action = el.getAttribute('data-manage-action');
   var tid    = el.getAttribute('data-tid');
   switch(action) {
-    case 'edit':   openEditModal(tid); break;
+    case 'edit':    openEditModal(tid); break;
     case 'resched': openReschedModal(tid); break;
-    case 'instr':  openInstrView(tid); break;
-    case 'delete': confirmDelete(tid); break;
+    case 'instr':   openInstrView(tid); break;
+    case 'delete':  confirmDelete(tid); break;
+    case 'photo':   triggerManagePhoto(tid); break;
   }
 }
 
 function handleInstrAction(e) {
-  // Upload button inside instrViewBody
+  // Modal photo upload button
+  var modalUpload = e.target.closest('[data-instr-action="modal-upload"]');
+  if (modalUpload) {
+    e.stopPropagation();
+    triggerModalUpload(modalUpload.getAttribute('data-tid'));
+    return;
+  }
+  // Instructions view upload button
   var uploadBtn = e.target.closest('[data-instr-action="upload"]');
   if (uploadBtn) {
     e.stopPropagation();
@@ -3158,6 +3182,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Instructions view (upload + media)
   var instrBody = document.getElementById('instrViewBody');
   if (instrBody) instrBody.addEventListener('click', handleInstrAction);
+  // Task modal photo section
+  var taskModal = document.getElementById('taskModal');
+  if (taskModal) taskModal.addEventListener('click', handleInstrAction);
 });
 
 // ── Day panel: mobile bottom sheet ──────────────────────
@@ -4955,6 +4982,133 @@ async function deleteInstrMedia(url, taskId) {
 
   renderInstrBody(task);
   showToast('Removed', '');
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHOTO / VIDEO — MODAL + MANAGE ROWS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Render the photo grid inside the edit modal
+function renderModalPhotoGrid(task) {
+  var grid   = document.getElementById('modalPhotoGrid');
+  var btn    = document.getElementById('modalPhotoBtn');
+  if (!grid || !task) return;
+  var media  = getTaskMedia(task);
+  grid.innerHTML = media.map(function(m) {
+    var isVideo = /\.(mp4|mov|webm|m4v)/i.test(m.url);
+    var safe    = encodeURIComponent(m.url);
+    return '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);aspect-ratio:4/3;background:var(--bg2);">'
+      + (isVideo
+          ? '<video src="' + m.url + '" preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>'
+          : '<img src="' + m.url + '" style="width:100%;height:100%;object-fit:cover;" alt="">')
+      + '<button data-action="deletemedia" data-mediaurl="' + safe + '" data-taskid="' + task.id + '" '
+      +   'style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.55);color:white;border:none;'
+      +   'border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;'
+      +   'display:flex;align-items:center;justify-content:center;">×</button>'
+      + '</div>';
+  }).join('');
+  // Update the upload button data-tid
+  if (btn) btn.dataset.tid = task.id;
+}
+
+// Camera/file picker triggered from edit modal
+function triggerModalUpload(taskId) {
+  var input = document.createElement('input');
+  input.type   = 'file';
+  input.accept = 'image/*,video/*';
+  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) input.capture = 'environment';
+  input.onchange = function() {
+    if (input.files && input.files[0]) uploadModalMedia(taskId, input.files[0]);
+  };
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(function() { if (input.parentNode) input.parentNode.removeChild(input); }, 5000);
+}
+
+async function uploadModalMedia(taskId, file) {
+  var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
+  if (!task) return;
+
+  var statusEl = document.getElementById('modalUploadStatus');
+  if (statusEl) statusEl.textContent = 'Uploading...';
+
+  var isVideo = file.type.startsWith('video/');
+  var maxSize = isVideo ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+  if (file.size > maxSize) {
+    showToast('File too large (max ' + (isVideo ? '100MB video' : '10MB image') + ')', 'error');
+    if (statusEl) statusEl.textContent = '';
+    return;
+  }
+
+  try {
+    var ext  = file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg');
+    var path = taskId + '/' + Date.now() + '.' + ext;
+    var uploadRes = await fetch(SB_STORAGE_URL + '/object/task-photos/' + path, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY,
+                 'Content-Type': file.type, 'Cache-Control': '3600', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!uploadRes.ok) throw new Error('HTTP ' + uploadRes.status);
+
+    var publicUrl = 'https://cjgoaufrfhsndfirkdxt.supabase.co/storage/v1/object/public/task-photos/' + path;
+
+    if (!task._photoUrl) {
+      task._photoUrl = publicUrl;
+      if (sbReady) sbWrite('Photo', function() { return sbPatch('tasks?id=eq.' + taskId, { photo_url: publicUrl }); });
+    } else {
+      var arr = [];
+      try { arr = task._mediaUrls ? JSON.parse(task._mediaUrls) : []; } catch(e) {}
+      arr.push(publicUrl);
+      task._mediaUrls = JSON.stringify(arr);
+      if (sbReady) sbWrite('Media', function() { return sbPatch('tasks?id=eq.' + taskId, { media_urls: task._mediaUrls }); });
+    }
+
+    if (statusEl) statusEl.textContent = '';
+    renderModalPhotoGrid(task);
+    showToast('Uploaded ✓', 'success');
+  } catch(err) {
+    if (statusEl) statusEl.textContent = '';
+    showToast('Upload failed: ' + err.message, 'error');
+  }
+}
+
+// Delete media triggered from modal photo grid (reuses deleteInstrMedia)
+// The data-action="deletemedia" on the × button is caught by handleInstrAction
+// which calls deleteInstrMedia — after delete we re-render the modal grid too
+(function() {
+  var _origDelete = window.deleteInstrMedia;
+  window.deleteInstrMedia = async function(url, taskId) {
+    await _origDelete(url, taskId);
+    // Also refresh modal grid if modal is open
+    var modal = document.getElementById('taskModal');
+    if (modal && modal.style.display !== 'none') {
+      var task = tasks.find(function(t) { return String(t.id) === String(taskId); });
+      if (task) renderModalPhotoGrid(task);
+    }
+  };
+})();
+
+// Quick photo upload from Manage Tasks row — opens instr view then uploads
+// Simpler: just trigger file picker directly and upload to that task
+function triggerManagePhoto(taskId) {
+  var input = document.createElement('input');
+  input.type   = 'file';
+  input.accept = 'image/*,video/*';
+  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) input.capture = 'environment';
+  input.onchange = function() {
+    if (input.files && input.files[0]) {
+      showToast('Uploading...', '');
+      uploadModalMedia(taskId, input.files[0]).then(function() {
+        renderManage(); // refresh manage view after upload
+      });
+    }
+  };
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(function() { if (input.parentNode) input.parentNode.removeChild(input); }, 5000);
 }
 
 
