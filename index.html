@@ -727,12 +727,11 @@ body {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  height: var(--bottom-nav-h);
-  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
   z-index: 150;
   box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
 }
-.bottom-nav-items { display: flex; height: 100%; }
+.bottom-nav-items { display: flex; height: var(--bottom-nav-h); }
 .bottom-nav-item {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -896,7 +895,7 @@ body {
   .app-body { padding-bottom: 0; }
   .scrollable-view {
     padding: 14px;
-    padding-bottom: calc(var(--bottom-nav-h) + 16px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 16px);
   }
 
   /* Cal toolbar compact */
@@ -929,7 +928,7 @@ body {
   .today-strip { display: none; }
 
   /* Toast above bottom nav */
-  .toast { bottom: calc(var(--bottom-nav-h) + 16px + env(safe-area-inset-bottom)); }
+  .toast { bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 16px); }
 }
 
 /* ── COMPACT MOBILE < 480px ── */
@@ -944,9 +943,7 @@ body {
 }
 
 /* Safe area for older iOS */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .bottom-nav { padding-bottom: env(safe-area-inset-bottom); height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom)); }
-}
+/* safe-area handled in .bottom-nav height calc above */
 /* ═══ SUPABASE SYNC UI ═══════════════════════════════════════════════════════ */
 .sb-banner {
   position:fixed; top:calc(var(--nav-h) + 8px);
@@ -2285,6 +2282,59 @@ function highlightDayPanelTask(taskId) {
   });
 }
 
+function taskCardHTML(task) {
+  const c = CAT[task.cat];
+  const hasInstructions = task.summary || task.steps;
+  const tid = String(task.id);
+  const doneLabel = task.done ? '↩ Mark Incomplete' : '✓ Complete';
+  const doneCls   = task.done ? 'style="color:var(--text3);border-color:var(--border-md);"' : 'style="color:var(--green);border-color:#81C995;background:var(--green-light);font-weight:600;"';
+  return `<div class="day-task-item${task.done?' done':''}" style="background:${c.bg};border-color:${task.done?c.border:'transparent'};" data-tid="${tid}">
+    <div style="display:flex;align-items:flex-start;gap:8px;">
+      <div class="day-task-checkbox" data-action="toggle" data-tid="${tid}">${task.done?'<svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4l2 2L6.5 2" stroke="#188038" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="day-task-name" style="color:${c.text};">${task.name}</div>
+        <div class="day-task-meta">${task.freq==='custom'&&task.customPattern?task.customPattern:FREQ(task.freq)}${getUserName(task.assignId)?' · '+getUserName(task.assignId):''}</div>
+      </div>
+      <span class="cat-pill" style="background:${c.bg};color:${c.text};border:1px solid ${c.border};font-size:10px;">${catLabel(task.cat)}</span>
+    </div>
+    ${hasInstructions?`
+    <div style="margin-top:8px;">
+      <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" data-action="instructions" data-tid="${tid}">
+        📋 <span class="instr-btn-label">${t('show_steps')}</span>
+      </button>
+      <div class="task-instructions-wrap instr-wrap">
+        <div class="instructions-content">
+          ${task.summary?`<div class="instructions-summary"><strong>${t('show_summary')}:</strong> ${task.summary}</div>${task.steps?'<hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:8px 0;">':''}`:''}
+          ${task.steps?task.steps.split('\n').filter(s=>s.trim()).map((s,i)=>{
+            const colonIdx=s.indexOf(':');
+            const stepText=colonIdx>-1?s.slice(colonIdx+1).trim():s;
+            return `<div class="instructions-step"><div class="instructions-step-num">${i+1}</div><div class="instructions-step-text">${stepText}</div></div>`;
+          }).join(''):''}
+        </div>
+      </div>
+    </div>`:''}
+    <div class="photo-area" style="margin-top:8px;" data-tid="${tid}">
+      ${task._photoUrl
+        ? `<div class="task-photo-wrap">
+             <img class="task-photo-img" src="${task._photoUrl}" alt="Task photo" data-action="viewphoto" data-url="${task._photoUrl}" data-tid="${tid}">
+             <div class="task-photo-actions">
+               <button class="task-photo-btn" data-action="viewphoto" data-url="${task._photoUrl}" data-tid="${tid}">🔍 View full</button>
+               <button class="task-photo-btn" data-action="photo" data-tid="${tid}">🔄 Replace</button>
+               <button class="task-photo-btn danger" data-action="deletephoto" data-tid="${tid}">🗑 Remove</button>
+             </div>
+           </div>`
+        : `<button class="task-photo-upload-btn" data-action="photo" data-tid="${tid}">📷 Add photo</button>`
+      }
+    </div>
+    <div class="day-task-actions" style="margin-top:8px;">
+      <button class="task-instructions-btn" ${doneCls} data-action="toggle" data-tid="${tid}">${doneLabel}</button>
+      <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" data-action="edit" data-tid="${tid}">✏️ Edit</button>
+      <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" data-action="resched" data-tid="${tid}">📅 Reschedule</button>
+      <button class="task-instructions-btn" style="color:var(--red);border-color:var(--red-mid);background:var(--red-light);" data-action="delete" data-tid="${tid}">🗑 Delete</button>
+    </div>
+  </div>`;
+}
+
 function renderDayPanelList(){
   const dayTasks=getTasksForDay(selectedDay,selectedMonth,selectedYear);
   const sub=dayTasks.length+' task'+(dayTasks.length!==1?'s':'')+' · '+dayTasks.filter(t=>t.done).length+' '+t('done_lbl');
@@ -2294,57 +2344,7 @@ function renderDayPanelList(){
     list.innerHTML=`<div class="no-tasks" style="padding:14px 4px;">${t('no_tasks_day')}</div>`;
     return;
   }
-  list.innerHTML=dayTasks.map(task=>{
-    const c=CAT[task.cat];
-    const hasInstructions=task.summary||task.steps;
-    return `<div class="day-task-item${task.done?' done':''}" style="background:${c.bg};border-color:${task.done?c.border:'transparent'};">
-      <div style="display:flex;align-items:flex-start;gap:8px;">
-        <div class="day-task-checkbox" onclick="toggleTaskAndRefresh(${task.id})">${task.done?'<svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4l2 2L6.5 2" stroke="#188038" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}</div>
-        <div style="flex:1;min-width:0;">
-          <div class="day-task-name" style="color:${c.text};">${task.name}</div>
-          <div class="day-task-meta">${task.freq==='custom'&&task.customPattern?task.customPattern:FREQ(task.freq)}${getUserName(task.assignId)?' · '+getUserName(task.assignId):''}</div>
-        </div>
-        <span class="cat-pill" style="background:${c.bg};color:${c.text};border:1px solid ${c.border};font-size:10px;">${catLabel(task.cat)}</span>
-      </div>
-      ${hasInstructions?`
-      <div style="margin-top:8px;">
-        <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" onclick="toggleInstructions(${task.id})">
-          📋 <span id="instr-btn-${task.id}">${t('show_steps')}</span>
-        </button>
-        <div class="task-instructions-wrap" id="instr-wrap-${task.id}">
-          <div class="instructions-content">
-            ${task.summary?`<div class="instructions-summary"><strong>${t('show_summary')}:</strong> ${task.summary}</div>${task.steps?'<hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:8px 0;">':''}`:''}
-            ${task.steps?task.steps.split('\n').filter(s=>s.trim()).map((s,i)=>{
-              const colonIdx=s.indexOf(':');
-              const stepLabel=colonIdx>-1?s.slice(0,colonIdx+1):'';
-              const stepText=colonIdx>-1?s.slice(colonIdx+1).trim():s;
-              return `<div class="instructions-step"><div class="instructions-step-num">${i+1}</div><div class="instructions-step-text">${stepText}</div></div>`;
-            }).join(''):''}
-          </div>
-        </div>
-      </div>`:''}
-      <div id="photo-area-${task.id}" style="margin-top:8px;">
-        ${task._photoUrl
-          ? `<div class="task-photo-wrap">
-               <img class="task-photo-img" src="${task._photoUrl}" alt="Task photo" onclick="openPhotoLightbox('${task._photoUrl}')">
-               <div class="task-photo-actions">
-                 <button class="task-photo-btn" onclick="openPhotoLightbox('${task._photoUrl}')">🔍 View full</button>
-                 <button class="task-photo-btn" onclick="triggerPhotoUpload(${task.id})">🔄 Replace</button>
-                 <button class="task-photo-btn danger" onclick="deleteTaskPhoto(${task.id})">🗑 Remove</button>
-               </div>
-             </div>`
-          : `<button class="task-photo-upload-btn" id="photo-upload-btn-${task.id}" onclick="triggerPhotoUpload(${task.id})">
-               📷 Add photo
-             </button>`
-        }
-      </div>
-      <div class="day-task-actions" style="margin-top:8px;">
-        <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" onclick="openEditModal(${task.id})">✏️ Edit</button>
-        <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" onclick="openReschedModal(${task.id})">📅 Reschedule</button>
-        <button class="task-instructions-btn" style="color:var(--red);border-color:var(--red-mid);background:var(--red-light);" onclick="confirmDelete(${task.id})">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
+  list.innerHTML=dayTasks.map(taskCardHTML).join('');
 }
 
 function toggleInstructions(taskId){
@@ -2356,7 +2356,8 @@ function toggleInstructions(taskId){
 }
 
 function toggleTaskAndRefresh(id){
-  const task=tasks.find(x=>x.id===id);
+  const sid=String(id);
+  const task=tasks.find(x=>String(x.id)===sid);
   if(task){task.done=!task.done;renderDayPanelList();renderMonth();updateStats();}
 }
 
@@ -3114,42 +3115,81 @@ window.toggleSidebar = function() {
 
 // ── Wire sheet click handlers ────────────────────────────
 // Makes dynamically-rendered HTML in bottom sheets interactive
-function wireSheetClicks(container) {
-  container.querySelectorAll('[onclick]').forEach(function(el) {
-    var onc = el.getAttribute('onclick');
-    el.removeAttribute('onclick');
-    // Store as data attr so we can inspect if needed
-    el.dataset.sheetOnclick = onc;
-    el.addEventListener('click', function(e) {
-      e.stopPropagation();
-      // Execute in true global scope by wrapping in a script element
-      // This guarantees every window-level function is reachable
-      try {
-        var s = document.createElement('script');
-        s.textContent = '(function(){ try{' + onc + '}catch(e){console.warn("sheet fn:",e.message);} })();';
-        document.head.appendChild(s);
-        document.head.removeChild(s);
-      } catch(err) {
-        console.warn('wireSheetClicks error:', err.message, '|', onc);
-      }
-      // Refresh sheet after any action
-      setTimeout(function() {
-        var daySheet = document.getElementById('daySheetOverlay');
-        if (daySheet && daySheet.classList.contains('open')) {
-          renderDayPanelList();
-          var src = document.getElementById('dayPanelList');
-          var dst = document.getElementById('daySheetList');
-          if (src && dst) {
-            dst.innerHTML = src.innerHTML;
-            document.getElementById('daySheetSub').textContent =
-              document.getElementById('dayPanelSub').textContent;
-            wireSheetClicks(dst);
-          }
-        }
-      }, 150);
-    });
-  });
+// wireSheetClicks is now a no-op — task actions use data-action delegation
+function wireSheetClicks(container) { /* handled by delegated listener */ }
+
+// Refresh the sheet list from the canonical dayPanelList
+function refreshSheetList() {
+  var daySheet = document.getElementById('daySheetOverlay');
+  if (!daySheet || !daySheet.classList.contains('open')) return;
+  renderDayPanelList();
+  var src = document.getElementById('dayPanelList');
+  var dst = document.getElementById('daySheetList');
+  if (src && dst) {
+    dst.innerHTML = src.innerHTML;
+    document.getElementById('daySheetSub').textContent =
+      document.getElementById('dayPanelSub').textContent;
+  }
 }
+
+// Single delegated click handler for ALL task card actions
+// Works on both the desktop panel (#dayPanelList) and mobile sheet (#daySheetList)
+function handleTaskAction(e) {
+  var el = e.target.closest('[data-action]');
+  if (!el) return;
+  e.stopPropagation();
+
+  var action = el.getAttribute('data-action');
+  var tid    = el.getAttribute('data-tid');
+  var url    = el.getAttribute('data-url');
+
+  switch(action) {
+    case 'toggle':
+      toggleTaskAndRefresh(tid);
+      setTimeout(refreshSheetList, 80);
+      break;
+    case 'instructions':
+      // Toggle the instructions wrap inside this card
+      var card = el.closest('.day-task-item');
+      if (!card) break;
+      var wrap = card.querySelector('.instr-wrap');
+      var lbl  = el.querySelector('.instr-btn-label');
+      if (!wrap) break;
+      var isOpen = wrap.classList.contains('open');
+      wrap.classList.toggle('open', !isOpen);
+      if (lbl) lbl.textContent = isOpen ? t('show_steps') : t('hide_steps');
+      break;
+    case 'edit':
+      openEditModal(tid);
+      break;
+    case 'resched':
+      openReschedModal(tid);
+      break;
+    case 'delete':
+      confirmDelete(tid);
+      setTimeout(refreshSheetList, 200);
+      break;
+    case 'photo':
+      triggerPhotoUpload(tid);
+      break;
+    case 'deletephoto':
+      deleteTaskPhoto(tid);
+      setTimeout(refreshSheetList, 200);
+      break;
+    case 'viewphoto':
+      if (url) openPhotoLightbox(url);
+      break;
+  }
+}
+
+// Attach delegated listener to both panel containers once on load
+document.addEventListener('DOMContentLoaded', function() {
+  var panels = ['dayPanelList', 'daySheetList'];
+  panels.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', handleTaskAction);
+  });
+});
 
 // ── Day panel: mobile bottom sheet ──────────────────────
 // Patch openDayPanel and closeDayPanel for mobile sheet behavior
