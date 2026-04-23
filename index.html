@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CFA Maintenance Hub</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Roboto:wght@300;400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 @font-face {
@@ -1276,6 +1277,9 @@ body {
   </div>
 </aside>
 
+<!-- MOBILE SIDEBAR SCRIM -->
+<div id="mobileSidebarScrim" style="display:none;position:fixed;inset:0;z-index:249;background:rgba(0,0,0,0.35);" onclick="closeMobileSidebar()"></div>
+
 <main class="main" id="mainContent">
 
 <!-- CALENDAR VIEW -->
@@ -1394,25 +1398,6 @@ body {
   <div class="scrollable-view">
     <div class="section-hdr"><div><div class="section-title">Upload Manual</div><div class="section-sub">Drop a PDF &#8212; Grok extracts tasks automatically</div></div></div>
 
-    <!-- No key warning -->
-    <div id="uploadApiWarn" style="display:none;background:var(--amber-light);border:1px solid #FFD0A0;border-radius:8px;padding:12px 14px;font-size:13px;color:#7A4800;margin-bottom:14px;line-height:1.5;">&#9888;&#65039; No Grok API key saved. Enter it below &#8212; only needs to be entered once.</div>
-
-    <!-- API key card -->
-    <div class="settings-card" id="uploadApiKeyCard" style="margin-bottom:14px;">
-      <div class="settings-card-hdr" style="cursor:pointer;">
-        <div class="settings-icon" style="background:#EEF;">&#128273;</div>
-        <div><div class="settings-title">Grok API Key</div><div class="settings-sub">Saved permanently &#8212; only change if you get a new key</div></div>
-        <div id="uploadApiStatus" class="api-status none" style="margin-left:auto;font-size:11px;">&#9675; Not saved</div>
-      </div>
-      <div class="settings-body" id="uploadApiKeyBody">
-        <div style="display:flex;gap:8px;align-items:center;">
-          <div class="api-key-wrap" style="flex:1;"><input class="form-input api-key-input" id="uploadApiKeyInput" type="password" placeholder="xai-xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off"><button class="api-key-toggle" id="uploadApiKeyToggle">Show</button></div>
-          <button class="save-btn" id="uploadApiKeySaveBtn">Save</button>
-        </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:6px;">Get your key at <strong style="color:var(--text2);">console.x.ai</strong> &#183; Uses grok-3</div>
-      </div>
-    </div>
-
     <!-- File drop -->
     <div class="upload-card" style="margin-bottom:14px;">
       <div class="upload-card-hdr">&#128196; Upload Manual (PDF, DOCX, TXT)</div>
@@ -1529,7 +1514,7 @@ body {
     <div style="padding:14px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <div>
         <div class="section-title" style="font-size:17px;">Completion Log</div>
-        <div class="section-sub">Health dept audit trail — all task completions</div>
+        <div class="section-sub">Internal maintenance log — all task completions</div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
         <div id="historyCount" style="font-size:12px;color:var(--text3);"></div>
@@ -1556,7 +1541,7 @@ body {
 <nav class="bottom-nav">
   <div class="bottom-nav-items">
     <button class="bottom-nav-item active" id="mnav-calendar" style="position:relative;" onclick="switchView('calendar')"><span class="bni-icon">📅</span><span class="bni-label" data-i18n="calendar">Calendar</span><span class="overdue-nav-badge" id="overdueNavBadge" style="display:none;"></span></button>
-    <button class="bottom-nav-item" id="mnav-tasks" onclick="switchView('tasks')"><span class="bni-icon">📋</span><span class="bni-label" data-i18n="all_tasks">Tasks</span></button>
+    <button class="bottom-nav-item" id="mnav-upload" onclick="switchView('upload')"><span class="bni-icon">📄</span><span class="bni-label">Upload</span></button>
     <button class="bottom-nav-item" id="mnav-manage" onclick="switchView('manage')"><span class="bni-icon">✏️</span><span class="bni-label" data-i18n="manage_tasks">Manage</span></button>
     <button class="bottom-nav-item" id="mnav-history" onclick="switchView('history')"><span class="bni-icon">📜</span><span class="bni-label">Log</span></button>
     <button class="bottom-nav-item" id="mnav-users" onclick="switchView('users')"><span class="bni-icon">👥</span><span class="bni-label" data-i18n="team_members">Team</span></button>
@@ -1609,10 +1594,7 @@ body {
     <div class="modal-hdr"><div class="modal-title" id="userModalTitle">Add team member</div><button class="modal-close" onclick="closeUserModal()">×</button></div>
     <div class="form-field"><label class="form-label" data-i18n="full_name">Full Name</label><input class="form-input" id="uName" type="text" inputmode="text"></div>
     <div class="form-field"><label class="form-label" data-i18n="email_address">Email Address</label><input class="form-input" id="uEmail" type="email" inputmode="email"></div>
-    <div class="form-2col">
-      <div class="form-field"><label class="form-label" data-i18n="role">Role</label><select class="form-input" id="uRole"></select></div>
-      <div class="form-field"><label class="form-label" data-i18n="shift">Shift</label><select class="form-input" id="uShift"></select></div>
-    </div>
+    <div class="form-field"><label class="form-label" data-i18n="role">Role</label><select class="form-input" id="uRole"></select></div>
     <div style="background:var(--blue-light);border:1px solid #B8D0EE;border-radius:8px;padding:12px 14px;font-size:13px;color:var(--blue);margin-top:4px;line-height:1.6;" data-i18n="email_note">📧 This person will receive an email whenever a task is assigned to them.</div>
     <div class="modal-footer"><button class="btn-ghost" onclick="closeUserModal()" data-i18n="cancel">Cancel</button><button class="btn-primary" onclick="saveUser()" data-i18n="add_member">Add Member</button></div>
   </div>
@@ -1774,9 +1756,9 @@ const STRINGS = {
     today_tasks:'Today', pending_lbl:'pending', done_lbl:'done',
     no_tasks_today:'No tasks scheduled for today.',
     no_tasks_day:'No tasks for this day. Click below to add one.',
-    freq_daily:'Daily', freq_weekly:'Weekly', freq_biweekly:'Bi-weekly',
+    freq_once:'One-off',freq_daily:'Daily', freq_weekly:'Weekly', freq_biweekly:'Bi-weekly',
     freq_monthly:'Monthly', freq_quarterly:'Quarterly', freq_yearly:'Annual', freq_custom:'Custom',
-    role_team:'Team Member', role_lead:'Shift Lead', role_manager:'Manager', role_director:'Director',
+    role_team:'Team Member', role_lead:'Shift Leader', role_director:'Director', role_facilities:'Facilities Manager',
     shift_am:'AM Shift', shift_pm:'PM Shift', shift_both:'Both Shifts',
     unassigned:'Unassigned', sun:'Sun', mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat',
   },
@@ -1838,9 +1820,9 @@ const STRINGS = {
     today_tasks:'Hoy', pending_lbl:'pendiente(s)', done_lbl:'hecho(s)',
     no_tasks_today:'No hay tareas programadas para hoy.',
     no_tasks_day:'No hay tareas para este día. Haz clic abajo para agregar una.',
-    freq_daily:'Diario', freq_weekly:'Semanal', freq_biweekly:'Quincenal',
+    freq_once:'Tarea única',freq_daily:'Diario', freq_weekly:'Semanal', freq_biweekly:'Quincenal',
     freq_monthly:'Mensual', freq_quarterly:'Trimestral', freq_yearly:'Anual', freq_custom:'Personalizado',
-    role_team:'Miembro del equipo', role_lead:'Líder de turno', role_manager:'Gerente', role_director:'Director',
+    role_team:'Miembro del equipo', role_lead:'Líder de turno', role_director:'Director', role_facilities:'Gerente de instalaciones',
     shift_am:'Turno AM', shift_pm:'Turno PM', shift_both:'Ambos turnos',
     unassigned:'Sin asignar', sun:'Dom', mon:'Lun', tue:'Mar', wed:'Mié', thu:'Jue', fri:'Vie', sat:'Sáb',
   }
@@ -1881,7 +1863,7 @@ const CAT = {
   equipment:{bg:'#F1F3F4',text:'#5F6368',dot:'#8A8880',border:'#DADCE0'},
   safety:   {bg:'#FCE8F3',text:'#A142A4',dot:'#D4537E',border:'#F6AEE5'}
 };
-const FREQ_KEYS = ['daily','weekly','biweekly','monthly','quarterly','yearly','custom'];
+const FREQ_KEYS = ['once','daily','weekly','biweekly','monthly','quarterly','yearly','custom'];
 const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS3_EN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -1938,7 +1920,7 @@ let tasks=[
    steps:'Step 1: Press MENU or ERROR LOG button on each panel.\nStep 2: Screenshot or write down any logged error codes.\nStep 3: Look up codes in Henny Penny service manual if unfamiliar.\nStep 4: If any E or F codes are present, notify director — may need Level 2 service call.'},
   {id:7,name:'Grease trap service',freq:'monthly',cat:'fryer',day:10,month:2,year:2026,done:true,assignId:0,
    summary:'Schedule vendor pump-out. File the service report.',
-   steps:'Step 1: Call your licensed grease trap vendor to confirm appointment.\nStep 2: Ensure access to trap is clear before vendor arrives.\nStep 3: Observe or confirm gallons pumped — ask for the manifest.\nStep 4: File the service manifest with your health dept folder. Log date in maintenance record.'},
+   steps:'Step 1: Call your licensed grease trap vendor to confirm appointment.\nStep 2: Ensure access to trap is clear before vendor arrives.\nStep 3: Observe or confirm gallons pumped — ask for the manifest.\nStep 4: File the service manifest and log the date in your maintenance record.'},
   {id:8,name:'Exhaust drip guard filter swap',freq:'monthly',cat:'fryer',day:1,month:2,year:2026,done:true,assignId:0,
    summary:'Replace the auto-shipped drip guard filter on hood exhaust.',
    steps:'Step 1: Locate the auto-ship box (should arrive monthly).\nStep 2: Turn off exhaust fan before accessing filter housing.\nStep 3: Remove old filter — wear gloves, it will be greasy.\nStep 4: Insert new filter per orientation arrow.\nStep 5: Restart exhaust fan. Dispose of old filter in grease waste.\nStep 6: Write date on filter housing with marker. Log swap.'},
@@ -1989,7 +1971,7 @@ let tasks=[
    steps:'Step 1: Locate each Ansul nozzle above the fryers and grill. Confirm all metal covers are in place.\nStep 2: Find the red pull station handle — must be accessible with nothing blocking it.\nStep 3: Read the pressure gauge on the Ansul tank — needle must be in the green zone.\nStep 4: Check certification tag — must not be expired.\nStep 5: Log all findings. Any out-of-spec item = notify director immediately.'},
   {id:24,name:'Ansul certification — schedule vendor',freq:'biweekly',cat:'safety',day:1,month:2,year:2026,done:true,assignId:3,
    summary:'Book semi-annual Ansul cert with licensed vendor. Log date.',
-   steps:'Step 1: Check the Ansul certification tag — note the expiration month.\nStep 2: Contact your licensed fire suppression vendor at least 3 weeks before expiration.\nStep 3: Confirm appointment and add to calendar.\nStep 4: On day of service: clear area under hood for vendor access.\nStep 5: Collect the signed certification form. File with health dept folder.\nStep 6: Note: 12-year certification is Level 2 (Inc. expense). Regular 6-month cert is Level 1 FCR.'},
+   steps:'Step 1: Check the Ansul certification tag — note the expiration month.\nStep 2: Contact your licensed fire suppression vendor at least 3 weeks before expiration.\nStep 3: Confirm appointment and add to calendar.\nStep 4: On day of service: clear area under hood for vendor access.\nStep 5: Collect the signed certification form. File in your maintenance records.\nStep 6: Note: 12-year certification is Level 2 (Inc. expense). Regular 6-month cert is Level 1 FCR.'},
   {id:25,name:'Fire extinguisher inspection',freq:'monthly',cat:'safety',day:3,month:2,year:2026,done:true,assignId:3,
    summary:'Gauge in green, pin present, seal intact, label legible on all units.',
    steps:'Step 1: Walk each fire extinguisher in the building.\nStep 2: Check pressure gauge — needle must be in the GREEN zone. Red = recharge needed.\nStep 3: Pull pin must be present and the tamper seal must be unbroken.\nStep 4: Shake and feel — no clumping inside.\nStep 5: Check inspection tag date — must be within the last 12 months.\nStep 6: Log each unit. Any issue = replace immediately (Level 1 FCR).'},
@@ -2006,8 +1988,8 @@ let tasks=[
    summary:'Press test button on every unit — must stay lit 90+ seconds.',
    steps:'Step 1: Locate every emergency exit light and emergency light fixture.\nStep 2: Press and hold TEST button on each unit.\nStep 3: Count to 90 — must stay lit.\nStep 4: Failures = replace battery or unit (Level 1 FCR).\nStep 5: Log pass/fail per unit.'},
   {id:30,name:'Pest control / Steritech treatment',freq:'monthly',cat:'safety',day:13,month:2,year:2026,done:true,assignId:0,
-   summary:'Coordinate Steritech visit. File the report in health dept folder.',
-   steps:'Step 1: Confirm Steritech appointment is on the calendar 2 weeks out.\nStep 2: On day of service: ensure technician has access to all areas (kitchen, restrooms, storage).\nStep 3: Walk the store with the technician if possible.\nStep 4: Collect the signed service report.\nStep 5: File report in your health dept folder. Health inspectors ask for this.'},
+   summary:'Coordinate Steritech visit. File the report in your maintenance records.',
+   steps:'Step 1: Confirm Steritech appointment is on the calendar 2 weeks out.\nStep 2: On day of service: ensure technician has access to all areas (kitchen, restrooms, storage).\nStep 3: Walk the store with the technician if possible.\nStep 4: Collect the signed service report.\nStep 5: File the report in your maintenance records.'},
   {id:31,name:'Bug light glue board replacement',freq:'monthly',cat:'safety',day:13,month:2,year:2026,done:true,assignId:0,
    summary:'Replace glue boards and check UV bulbs in all insect traps.',
    steps:'Step 1: Locate all insect light traps (usually near back door, restrooms, or storage).\nStep 2: Remove the glue board — wear gloves.\nStep 3: Count insects caught. High numbers in a specific area = report to Steritech.\nStep 4: Insert fresh glue board.\nStep 5: Check UV bulb — it should glow purple/blue. Dim or out = replace bulb (Level 1 FCR).\nStep 6: Dispose of old boards per local regulations. Log count.'},
@@ -2034,13 +2016,13 @@ let tasks=[
    steps:'Step 1: Use a TDS meter to test the post-RO water. Should be below 50 ppm.\nStep 2: Check flow rate at post-RO tap — should match spec sheet for your system.\nStep 3: If TDS is above 50 ppm or flow is slow, membrane needs replacement (Level 1 FCR).\nStep 4: Log TDS reading and date. Track trend over time — gradual increase = membrane wearing.'},
   {id:39,name:'Backflow preventer annual inspection',freq:'yearly',cat:'equipment',day:14,month:2,year:2026,done:true,assignId:0,
    summary:'Annual test by certified inspector. File report for local code compliance.',
-   steps:'Step 1: Schedule certified backflow inspector (must be licensed for your jurisdiction).\nStep 2: Inspector will attach test gauges and run the standard two-valve test.\nStep 3: Collect signed test report. Must pass for code compliance.\nStep 4: File with your health dept and municipal water compliance folder.\nStep 5: Note: if backflow fails, water must be shut off until repaired. This is a Level 2 repair (Inc. expense).'},
+   steps:'Step 1: Schedule certified backflow inspector (must be licensed for your jurisdiction).\nStep 2: Inspector will attach test gauges and run the standard two-valve test.\nStep 3: Collect signed test report. Must pass for code compliance.\nStep 4: File in your municipal water compliance records.\nStep 5: Note: if backflow fails, water must be shut off until repaired. This is a Level 2 repair (Inc. expense).'},
   {id:40,name:'Floor drain hydrojetting & cleaning',freq:'monthly',cat:'cleaning',day:12,month:2,year:2026,done:true,assignId:1,
    summary:'Rod and clean all kitchen floor drains to prevent FOG backup.',
    steps:'Step 1: Use a drain snake or call your plumber for hydrojetting service.\nStep 2: Remove drain grates and scrub with a stiff brush and degreaser.\nStep 3: Rod each drain to break up any FOG (fats, oils, grease) accumulation.\nStep 4: Flush with hot water to confirm clear flow.\nStep 5: Replace grates. Log date and which drains were serviced.'},
   {id:41,name:'General caulking inspection',freq:'quarterly',cat:'cleaning',day:7,month:2,year:2026,done:true,assignId:0,
    summary:'Inspect caulk at all sinks, counters, and baseboards. Re-caulk gaps.',
-   steps:'Step 1: Walk every sink, counter edge, and floor/wall junction in the kitchen and restrooms.\nStep 2: Look for cracking, peeling, missing, or discolored caulk.\nStep 3: Re-caulk any gaps with food-safe silicone caulk.\nStep 4: Apply smoothly and let cure per product instructions before wetting.\nStep 5: Health dept flags this on virtually every inspection — stay ahead of it.'},
+   steps:'Step 1: Walk every sink, counter edge, and floor/wall junction in the kitchen and restrooms.\nStep 2: Look for cracking, peeling, missing, or discolored caulk.\nStep 3: Re-caulk any gaps with food-safe silicone caulk.\nStep 4: Apply smoothly and let cure per product instructions before wetting.\nStep 5: Stay ahead of this — it comes up frequently during equipment checks.'},
   {id:42,name:'Drain tempering valve (DTV) check',freq:'quarterly',cat:'cleaning',day:5,month:2,year:2026,done:true,assignId:0,
    summary:'Verify DTV keeps dishwasher discharge temp at or below code limit.',
    steps:'Step 1: Run dishwasher through a full cycle.\nStep 2: Measure discharge water temperature at the drain outlet with a thermometer.\nStep 3: Should not exceed local code limit (typically 140°F at drain).\nStep 4: If too hot, the DTV is failing and needs replacement (Level 2 repair).\nStep 5: Log temperature reading.'},
@@ -2076,7 +2058,7 @@ function catLabel(cat){
 function populateSelects() {
   const freqOpts = FREQ_KEYS.map(k=>`<option value="${k}">${FREQ(k)}</option>`).join('');
   const catOpts = ['fryer','ice','hvac','cleaning','equipment','safety'].map(c=>`<option value="${c}">${catLabel(c)}</option>`).join('');
-  const roleOpts = ['team','lead','manager','director'].map(r=>`<option value="${r}">${t('role_'+r)}</option>`).join('');
+  const roleOpts = ['team','lead','director','facilities'].map(r=>`<option value="${r}">${t('role_'+r)}</option>`).join('');
   const shiftOpts = ['AM','PM','both'].map(s=>`<option value="${s}">${t('shift_'+s.toLowerCase())}</option>`).join('');
   ['mTaskFreq','manualFreq'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
@@ -2085,7 +2067,7 @@ function populateSelects() {
   });
   ['mTaskCat','manualCat'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=catOpts;});
   const uRole=document.getElementById('uRole');if(uRole)uRole.innerHTML=roleOpts;
-  const uShift=document.getElementById('uShift');if(uShift)uShift.innerHTML=shiftOpts;
+  // shift field removed
   populateUserDropdowns();
 }
 
@@ -2100,6 +2082,7 @@ function populateUserDropdowns(){
 
 // ── NAVIGATION ───────────────────────────────────────────────────────────────
 function switchView(v){
+  if(window.innerWidth<768) closeMobileSidebar();
   document.querySelectorAll('.view').forEach(el=>{el.classList.remove('active');el.style.display='none';});
   const vEl=document.getElementById('view-'+v);
   vEl.classList.add('active');vEl.style.display='flex';
@@ -2112,7 +2095,22 @@ function switchView(v){
   if(v==='users'){renderUserList();renderEmailLog();}
   document.getElementById('sidebar').classList.remove('open');
 }
-function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
+function toggleSidebar(){
+  var sidebar=document.getElementById('sidebar');
+  var scrim=document.getElementById('mobileSidebarScrim');
+  if(window.innerWidth<768){
+    var isOpen=!sidebar.classList.contains('collapsed');
+    sidebar.classList.toggle('collapsed');
+    if(scrim) scrim.style.display=isOpen?'none':'';
+  } else {
+    sidebar.classList.toggle('collapsed');
+  }
+}
+function closeMobileSidebar(){
+  document.getElementById('sidebar').classList.add('collapsed');
+  var scrim=document.getElementById('mobileSidebarScrim');
+  if(scrim) scrim.style.display='none';
+}
 
 // ── CALENDAR ─────────────────────────────────────────────────────────────────
 function setCalView(v){
@@ -2384,11 +2382,11 @@ function renderUserList(){
   document.getElementById('userList').innerHTML=users.map(u=>{const[rbg,rtxt]=ROLE_COLORS[u.role]||['#F1F3F4','#5F6368'];return`<div class="user-row"><div class="user-avatar" style="background:${u.color}22;color:${u.color};">${getInitials(u.name)}</div><div style="flex:1;min-width:0;"><div class="user-name">${u.name}</div><div class="user-email">${u.email}</div></div><span style="font-size:9.5px;color:var(--text3);margin-right:4px;">${u.shift}</span><span class="user-role" style="background:${rbg};color:${rtxt};">${t('role_'+u.role)}</span><button class="icon-btn del" onclick="deleteUser(${u.id})" style="margin-left:6px;">🗑️</button></div>`;}).join('')||`<div class="no-tasks">${t('no_tasks_today')}</div>`;
 }
 function deleteUser(id){if(!confirm('Remove this team member?'))return;users=users.filter(x=>x.id!==id);tasks.forEach(t=>{if(t.assignId===id)t.assignId=0;});renderUserList();populateUserDropdowns();updateStats();showToast('Team member removed','');}
-function openAddUserModal(){document.getElementById('userModalTitle').textContent=t('add_member');document.getElementById('uName').value='';document.getElementById('uEmail').value='';document.getElementById('uRole').value='team';document.getElementById('uShift').value='AM';document.getElementById('userModal').style.display='flex';}
+function openAddUserModal(){document.getElementById('userModalTitle').textContent=t('add_member');document.getElementById('uName').value='';document.getElementById('uEmail').value='';document.getElementById('uRole').value='team';document.getElementById('userModal').style.display='flex';}
 function closeUserModal(){document.getElementById('userModal').style.display='none';}
 function closeUserModalOnBg(e){if(e.target.id==='userModal')closeUserModal();}
 function saveUser(){
-  const name=document.getElementById('uName').value.trim(),email=document.getElementById('uEmail').value.trim(),role=document.getElementById('uRole').value,shift=document.getElementById('uShift').value;
+  const name=document.getElementById('uName').value.trim(),email=document.getElementById('uEmail').value.trim(),role=document.getElementById('uRole').value;
   if(!name||!email){showToast(t('task_name'),'error');return;}
   if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){showToast('Invalid email','error');return;}
   users.push({id:nextUserId++,name,email,role,shift,color:AVATAR_COLORS[users.length%AVATAR_COLORS.length]});
@@ -2401,15 +2399,52 @@ function renderEmailLog(){
 }
 function sendAssignmentEmail(task,user){
   const emailToggle=document.getElementById('toggle-email');
+  const emailEnabled=emailToggle?emailToggle.classList.contains('on'):true;
   const dateStr=fmtDate(task.day,task.month,task.year);
-  const entry={to:user.email,toName:user.name,subject:`[CFA Maintenance] Task Assigned: ${task.name}`,body:`Hi ${user.name.split(' ')[0]},\n\nYou've been assigned a maintenance task at CFA Store #04821.\n\nTask: ${task.name}\nDue: ${dateStr}\nCategory: ${catLabel(task.cat)}\nFrequency: ${FREQ(task.freq)}${task.summary?'\n\nSummary: '+task.summary:''}${task.steps?'\n\nSteps:\n'+task.steps:''}\n\n— CFA Maintenance Hub`,timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),sent:emailToggle?emailToggle.classList.contains('on'):true};
+  const entry={
+    to:user.email,toName:user.name,
+    subject:`[CFA Maintenance] Task Assigned: ${task.name}`,
+    body:`Hi ${user.name.split(' ')[0]},\n\nYou've been assigned a maintenance task at CFA Store #04821.\n\nTask: ${task.name}\nDue: ${dateStr}\nCategory: ${catLabel(task.cat)}\nFrequency: ${FREQ(task.freq)}${task.summary?'\n\nSummary: '+task.summary:''}${task.steps?'\n\nSteps:\n'+task.steps:''}\n\n— CFA Maintenance Hub`,
+    timestamp:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+    sent:false
+  };
   emailLog.unshift(entry);
   if(document.getElementById('view-users').classList.contains('active'))renderEmailLog();
+
+  if(!emailEnabled){entry.sent=false;entry.status='disabled';return entry;}
+
+  if(typeof emailjs==='undefined'){
+    console.warn('[email] EmailJS not loaded');
+    entry.status='error: SDK not loaded';
+    return entry;
+  }
+
+  // Actually send via EmailJS
+  emailjs.send('service_9vknjgu','template_ilx9e8m',{
+    to_email:   user.email,
+    to_name:    user.name,
+    task_name:  task.name,
+    due_date:   dateStr,
+    category:   catLabel(task.cat),
+    frequency:  FREQ(task.freq),
+    summary:    task.summary||'',
+    steps:      task.steps||'',
+    store_num:  '04821'
+  }).then(function(){
+    entry.sent=true;entry.status='sent';
+    showToast('Email sent to '+user.name,'success');
+    if(document.getElementById('view-users').classList.contains('active'))renderEmailLog();
+  }).catch(function(err){
+    entry.status='error: '+(err.text||err.message||'unknown');
+    showToast('Email failed: '+(err.text||err.message||'unknown'),'error');
+    if(document.getElementById('view-users').classList.contains('active'))renderEmailLog();
+  });
+
   return entry;
 }
 
 // ── TASK MODALS ───────────────────────────────────────────────────────────────
-function openAddModal(){openAddModalForDate(`2026-04-06`);}
+function openAddModal(){var _d=new Date();openAddModalForDate(_d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0')+'-'+String(_d.getDate()).padStart(2,'0'));}
 function openAddModalForDate(dateStr){
   editingId=null;
   document.getElementById('modalTitle').textContent=t('add_task');
@@ -2479,13 +2514,32 @@ function confirmResched(){
   if(document.getElementById('view-manage').classList.contains('active'))renderManage();
 }
 function confirmDelete(id){
-  const task=tasks.find(x=>x.id===id);if(!task)return;
-  if(!confirm(`Delete "${task.name}"? This cannot be undone.`))return;
-  tasks=tasks.filter(x=>x.id!==id);showToast('"'+task.name+'" deleted','');
-  renderCal();updateStats();
-  if(dayPanelOpen)renderDayPanelList();
-  if(document.getElementById('view-tasks').classList.contains('active'))renderTaskTable();
-  if(document.getElementById('view-manage').classList.contains('active'))renderManage();
+  var task=tasks.find(function(x){return String(x.id)===String(id);});
+  if(!task) return;
+  if(!confirm('Delete "'+task.name+'"? This cannot be undone.')) return;
+  var name=task.name;
+  tasks=tasks.filter(function(x){return String(x.id)!==String(id);});
+  showToast('"'+name+'" deleted','');
+  // Remove card immediately from day panel without full re-render flicker
+  var card=document.querySelector('[data-tid="'+String(id)+'"]');
+  if(card) card.remove();
+  // Also remove from mobile sheet if open
+  var sheetCard=document.querySelector('#daySheetList [data-tid="'+String(id)+'"]');
+  if(sheetCard) sheetCard.remove();
+  renderCal(); updateStats();
+  // Full refresh of panel + sheet after DOM removal
+  if(dayPanelOpen) renderDayPanelList();
+  var sheet=document.getElementById('daySheetOverlay');
+  if(sheet&&sheet.classList.contains('open')){
+    var sl=document.getElementById('daySheetList');
+    var pl=document.getElementById('dayPanelList');
+    if(sl&&pl) sl.innerHTML=pl.innerHTML;
+  }
+  var mv=document.getElementById('view-manage');
+  if(mv&&mv.classList.contains('active')) renderManage();
+  if(typeof sbWrite!=='undefined'&&sbReady){
+    (function(tid){sbWrite('Task delete',function(){return sb.from('tasks').delete().eq('id',tid);});})(id);
+  }
 }
 
 // ── UPLOAD ────────────────────────────────────────────────────────────────────
@@ -2534,7 +2588,25 @@ function loadSettings(){
   document.getElementById('lang-'+(lang==='en'?'es':'en')).classList.remove('active');
   const key=localStorage.getItem('grokApiKey');const instr=localStorage.getItem('aiInstructions');
   if(key){document.getElementById('grokApiKey').value=key;updateApiStatus(true);}
-  document.getElementById('aiInstructions').value=instr||`You are a maintenance assistant for Chick-fil-A store #04821 in Denver, CO. Store opens 6:30am, closes 10pm Mon–Sat.\n\nWhen parsing maintenance manuals:\n1. Extract each distinct maintenance task with its exact name.\n2. For each task, write a QUICK SUMMARY (one sentence, for experienced staff who know the procedure).\n3. Also write STEP-BY-STEP INSTRUCTIONS (numbered, clear, for someone doing it for the first time). Steps should be practical — what to physically do, what to look for, what "done" looks like.\n4. Categorize as: fryer, ice, hvac, cleaning, equipment, or safety.\n5. Assign frequency: daily, weekly, biweekly, monthly, quarterly, or yearly.\n\nOutput format (JSON):\n{"tasks":[{"name":"...", "freq":"monthly", "cat":"hvac", "summary":"...", "steps":"Step 1: ...\\nStep 2: ..."}]}`;
+  document.getElementById('aiInstructions').value=instr||`You are the AI assistant for the CFA Cherry Creek Maintenance Hub (Store #03643 / #04821), Denver, CO. You have two modes:
+
+MANUAL PARSING MODE (when given a document to extract tasks from):
+- Extract every distinct maintenance task by its exact name from the document.
+- Write a concise one-sentence SUMMARY for experienced staff who already know the procedure.
+- Write numbered STEP-BY-STEP INSTRUCTIONS written clearly enough for someone doing it for the first time. Each step should describe the physical action, what to look for, and what "done" looks like.
+- Categorize each task as one of: fryer, ice, hvac, cleaning, equipment, or safety.
+- Assign a frequency: daily, weekly, biweekly, monthly, quarterly, or yearly.
+- Output ONLY valid JSON, no markdown, no explanation:
+  {"tasks":[{"name":"...","freq":"monthly","cat":"hvac","summary":"...","steps":"Step 1: ...\\nStep 2: ..."}]}
+
+ASSISTANT MODE (when answering questions or taking actions):
+- You are talking to a director at CFA Cherry Creek. Be direct, concise, and practical.
+- You have full visibility into the maintenance calendar, task list, team members, and completion history.
+- You can create tasks, edit tasks, reschedule tasks, mark tasks complete, add/remove team members, and manage categories.
+- When making a change, always confirm what you did in plain language.
+- If something is ambiguous, ask one clarifying question before acting.
+- Prioritize food safety, equipment uptime, and operational readiness in all recommendations.
+- Store hours: Mon–Sat 6:30am–10pm. Use this context when scheduling tasks.`;
   const sn=localStorage.getItem('storeNum');if(sn)document.getElementById('storeNum').value=sn;
   const sl=localStorage.getItem('storeLoc');if(sl)document.getElementById('storeLoc').value=sl;
 }
@@ -2560,7 +2632,13 @@ function updateStats(){
   document.getElementById('statTotal').textContent=tasks.length;
 }
 let toastTimer;
-function showToast(msg,type){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(type?' '+type:'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3000);}
+function showToast(msg,type){
+  var el=document.getElementById('toast');
+  if(!el||!msg) return;
+  el.textContent=msg;
+  el.className='toast show'+(type?' '+type:'');
+  // No auto-dismiss — stays until replaced by a new toast
+}
 
 // ── STAT PANEL (Due Today / This Week) ───────────────────────────────────────
 let statPanelOpen = false;
@@ -2869,7 +2947,7 @@ function FREQ(k) {
   if (k === 'custom') return t('freq_custom');
   return t('freq_' + k);
 }
-document.getElementById('manualDate').value=`2026-04-06`;
+(function(){var _d=new Date();document.getElementById('manualDate').value=_d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0')+'-'+String(_d.getDate()).padStart(2,'0');})();
 loadSettings();
 applyI18n();
 populateSelects();
@@ -3462,7 +3540,7 @@ function renderHistoryList() {
   if (count) count.textContent = rows.length + ' entries';
 
   if (!rows.length) {
-    list.innerHTML = '<div class="comp-empty">No completions recorded yet.<br>Check off tasks to build the audit trail.</div>';
+    list.innerHTML = '<div class="comp-empty">No completions recorded yet.<br>Check off tasks to build the maintenance log.</div>';
     return;
   }
 
@@ -3770,13 +3848,12 @@ async function loadCompletionHistory() {
     var name  = document.getElementById('uName').value.trim();
     var email = document.getElementById('uEmail').value.trim();
     var role  = document.getElementById('uRole').value;
-    var shift = document.getElementById('uShift').value;
     if (!name || !email) { showToast('Please fill in name and email', 'error'); return; }
     if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) { showToast('Invalid email', 'error'); return; }
 
     var color   = AVATAR_COLORS[users.length % AVATAR_COLORS.length];
     var tempId  = nextUserId++;
-    var newUser = { id:tempId, name:name, email:email, role:role, shift:shift, color:color };
+    var newUser = { id:tempId, name:name, email:email, role:role,  color:color };
     users.push(newUser);
     closeUserModal(); renderUserList(); populateUserDropdowns();
     showToast(name + ' added', 'success');
@@ -4272,6 +4349,10 @@ async function parseUploadedFiles() {
 // ── DOMContentLoaded — wire up delegation ───────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Init EmailJS
+  if (typeof emailjs !== 'undefined') {
+    emailjs.init('MYl9llCKPT-esh1aT');
+  }
   // Manage view delegation
   ['manageUpcoming', 'manageDelete'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -4282,32 +4363,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (instrBody) instrBody.addEventListener('click', handleInstrAction);
   var taskModal = document.getElementById('taskModal');
   if (taskModal) taskModal.addEventListener('click', handleInstrAction);
-  // Upload API key card
-  var card = document.getElementById('uploadApiKeyCard');
-  if (card) {
-    card.querySelector('.settings-card-hdr').addEventListener('click', function() {
-      var body = document.getElementById('uploadApiKeyBody');
-      if (body) body.style.display = body.style.display === 'none' ? '' : 'none';
-    });
-  }
-  var toggle = document.getElementById('uploadApiKeyToggle');
-  if (toggle) toggle.addEventListener('click', function(e) {
-    e.stopPropagation();
-    var inp = document.getElementById('uploadApiKeyInput');
-    if (inp.type === 'password') { inp.type = 'text'; toggle.textContent = 'Hide'; }
-    else { inp.type = 'password'; toggle.textContent = 'Show'; }
-  });
-  var saveBtn = document.getElementById('uploadApiKeySaveBtn');
-  if (saveBtn) saveBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    var key = document.getElementById('uploadApiKeyInput').value.trim();
-    if (!key) { showToast('Enter your API key first', 'error'); return; }
-    localStorage.setItem('grokApiKey', key);
-    var si = document.getElementById('grokApiKey'); if (si) { si.value = key; updateApiStatus(true); }
-    showToast('API key saved', 'success');
-    updateUploadApiUI();
-  });
-  updateUploadApiUI();
+  // (upload API key card removed from upload view — key managed in Settings)
 });
 
 // ── OPEN/EDIT MODAL — show/hide photo section ───────────────────────────────
@@ -4343,15 +4399,16 @@ document.addEventListener('DOMContentLoaded', function() {
 // ── ALSO REPLACE renderManage ─────────────────────────────────────────────────
 // (redefining replaces the old one since JS is single-scope)
 function renderManage() {
+  // ── Upcoming (undone, soonest first) ──────────────────────────────────────
   var upcoming = tasks.filter(function(t){ return !t.done; })
     .sort(function(a,b){ return new Date(a.year,a.month,a.day) - new Date(b.year,b.month,b.day); });
   var upEl = document.getElementById('manageUpcoming');
   upEl.innerHTML = upcoming.length ? upcoming.map(function(task){
     var c = CAT[task.cat] || CAT.equipment;
-    var rows = '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="edit" data-tid="' + task.id + '">\u270f\ufe0f Edit</button>'
-      + '<button class="btn-amber" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="resched" data-tid="' + task.id + '">\ud83d\udcc5 Resched</button>'
-      + (task.summary||task.steps ? '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="instr" data-tid="' + task.id + '">\ud83d\udccb Steps</button>' : '')
-      + '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="photo" data-tid="' + task.id + '">\ud83d\udcf7</button>';
+    var rows = '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="edit" data-tid="' + task.id + '">' + '\u270f\ufe0f' + ' Edit</button>'
+      + '<button class="btn-amber" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="resched" data-tid="' + task.id + '">' + '\ud83d\udcc5' + ' Resched</button>'
+      + (task.summary||task.steps ? '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="instr" data-tid="' + task.id + '">' + '\ud83d\udccb' + ' Steps</button>' : '')
+      + '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="photo" data-tid="' + task.id + '">' + '\ud83d\udcf7' + '</button>';
     return '<div class="manage-task-row" style="flex-wrap:wrap;gap:6px;padding:10px 0;">'
       + '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">'
       + '<div class="cat-dot" style="background:' + c.dot + ';border-radius:3px;flex-shrink:0;"></div>'
@@ -4360,22 +4417,52 @@ function renderManage() {
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + rows + '</div></div>';
   }).join('') : '<div class="no-tasks">All tasks complete!</div>';
 
+  // ── All Tasks — deduplicated by name+freq ─────────────────────────────────
+  // One-off tasks (freq==='once') are always shown individually.
+  // Recurring tasks with the same name+freq are collapsed to one row showing
+  // the freq label and a count badge ("weekly · 4 scheduled").
   var allEl = document.getElementById('manageDelete');
-  var sorted = tasks.slice().sort(function(a,b){ return new Date(a.year,a.month,a.day)-new Date(b.year,b.month,b.day); });
-  allEl.innerHTML = sorted.map(function(task){
+  var seen = {};
+  var deduped = [];
+  var sorted = tasks.slice().sort(function(a,b){
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return new Date(a.year,a.month,a.day) - new Date(b.year,b.month,b.day);
+  });
+
+  sorted.forEach(function(task) {
+    if (task.freq === 'once') { deduped.push({task:task, count:1}); return; }
+    var key = (task.name||'').toLowerCase().trim() + '|' + task.freq;
+    if (!seen[key]) {
+      seen[key] = {task:task, count:1};
+      deduped.push(seen[key]);
+    } else {
+      seen[key].count++;
+      var cur = seen[key].task;
+      var curDate = new Date(cur.year,cur.month,cur.day);
+      var newDate = new Date(task.year,task.month,task.day);
+      if (!task.done && (cur.done || newDate < curDate)) seen[key].task = task;
+    }
+  });
+
+  allEl.innerHTML = deduped.map(function(entry){
+    var task  = entry.task;
+    var count = entry.count;
     var c = CAT[task.cat] || CAT.equipment;
+    var freqLabel  = task.freq === 'once' ? 'One-off' : FREQ(task.freq);
+    var countNote  = count > 1 ? ' \xb7 ' + count + ' scheduled' : '';
     return '<div class="manage-task-row" style="flex-wrap:wrap;gap:6px;padding:10px 0;' + (task.done?'opacity:0.55;':'') + '">'
       + '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">'
       + '<div class="cat-dot" style="background:' + c.dot + ';border-radius:3px;flex-shrink:0;"></div>'
       + '<div style="flex:1;min-width:0;"><div class="manage-task-name">' + task.name + '</div>'
-      + '<div style="font-size:11px;color:var(--text3);">' + MONTHS()[task.month].slice(0,3) + ' ' + task.day + ' \xb7 ' + FREQ(task.freq) + ' \xb7 ' + catLabel(task.cat) + '</div></div></div>'
+      + '<div style="font-size:11px;color:var(--text3);">' + freqLabel + countNote + ' \xb7 ' + catLabel(task.cat) + '</div></div></div>'
       + '<div style="display:flex;gap:6px;">'
-      + '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="edit" data-tid="' + task.id + '">\u270f\ufe0f Edit</button>'
-      + '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="photo" data-tid="' + task.id + '">\ud83d\udcf7</button>'
-      + '<button class="btn-danger" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="delete" data-tid="' + task.id + '">\ud83d\uddd1</button>'
+      + '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="edit" data-tid="' + task.id + '">' + '\u270f\ufe0f' + ' Edit</button>'
+      + '<button class="btn-ghost" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="photo" data-tid="' + task.id + '">' + '\ud83d\udcf7' + '</button>'
+      + '<button class="btn-danger" style="padding:6px 10px;font-size:12px;min-height:34px;" data-manage-action="delete" data-tid="' + task.id + '">' + '\ud83d\uddd1' + '</button>'
       + '</div></div>';
   }).join('');
 }
+
 
 // ── TASK CARD — summary inline, Steps button ─────────────────────────────────
 function taskCardHTML(task) {
@@ -4732,7 +4819,7 @@ function closeWhoModal() {
       list.innerHTML = '<div style="text-align:center;padding:40px 20px;">'
         + '<div style="font-size:36px;margin-bottom:12px;">&#10003;</div>'
         + '<div style="font-size:15px;font-weight:500;color:var(--text);margin-bottom:6px;">No completions yet</div>'
-        + '<div style="font-size:13px;color:var(--text3);line-height:1.6;">Check off tasks on the calendar to build your audit trail. Every completion is logged here with timestamp and team member.</div>'
+        + '<div style="font-size:13px;color:var(--text3);line-height:1.6;">Check off tasks on the calendar to build your maintenance record. Every completion is logged here with timestamp and team member.</div>'
         + '</div>';
       return;
     }
@@ -4794,6 +4881,435 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   updateOverdueBadge();
 });
+
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI CHAT BUBBLE — full authority assistant
+// ═══════════════════════════════════════════════════════════════════════════════
+
+(function() {
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var _aiOpen   = false;
+var _aiHistory = [];   // {role:'user'|'assistant', content:'...'}
+var _aiLoading = false;
+
+// ── Inject CSS ────────────────────────────────────────────────────────────────
+var s = document.createElement('style');
+s.textContent = [
+  /* Bubble button */
+  '#aiBubble{',
+  '  position:fixed;bottom:calc(72px + env(safe-area-inset-bottom,0px));right:16px;',
+  '  width:52px;height:52px;border-radius:50%;',
+  '  background:var(--red);color:white;',
+  '  border:none;cursor:pointer;',
+  '  box-shadow:0 4px 16px rgba(228,0,43,.45);',
+  '  font-size:22px;display:flex;align-items:center;justify-content:center;',
+  '  z-index:700;transition:transform .15s,box-shadow .15s;',
+  '  -webkit-tap-highlight-color:transparent;',
+  '}',
+  '#aiBubble:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(228,0,43,.55);}',
+  '#aiBubble.has-unread::after{',
+  '  content:"";position:absolute;top:3px;right:3px;',
+  '  width:10px;height:10px;border-radius:50%;',
+  '  background:#34A853;border:2px solid white;',
+  '}',
+  /* Panel */
+  '#aiPanel{',
+  '  position:fixed;bottom:calc(136px + env(safe-area-inset-bottom,0px));right:16px;',
+  '  width:min(380px,calc(100vw - 32px));',
+  '  height:min(520px,calc(100vh - 180px));',
+  '  background:var(--surface);',
+  '  border:1px solid var(--border);',
+  '  border-radius:16px;',
+  '  box-shadow:0 8px 40px rgba(0,0,0,.18);',
+  '  display:flex;flex-direction:column;',
+  '  overflow:hidden;',
+  '  z-index:700;',
+  '  transform:scale(.92) translateY(12px);opacity:0;pointer-events:none;',
+  '  transition:transform .2s cubic-bezier(.34,1.56,.64,1),opacity .18s;',
+  '}',
+  '#aiPanel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all;}',
+  /* Header */
+  '#aiPanelHdr{',
+  '  display:flex;align-items:center;gap:10px;',
+  '  padding:12px 14px;',
+  '  border-bottom:1px solid var(--border);',
+  '  flex-shrink:0;background:var(--surface);',
+  '}',
+  '#aiPanelHdr .ai-avatar{',
+  '  width:32px;height:32px;border-radius:50%;',
+  '  background:var(--red);color:white;',
+  '  display:flex;align-items:center;justify-content:center;',
+  '  font-size:16px;flex-shrink:0;',
+  '}',
+  '#aiPanelHdr .ai-title{font-size:14px;font-weight:600;color:var(--text);flex:1;}',
+  '#aiPanelHdr .ai-sub{font-size:11px;color:var(--text3);}',
+  '#aiClearBtn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:4px;min-height:32px;}',
+  '#aiClearBtn:hover{color:var(--text);}',
+  /* Messages */
+  '#aiMessages{',
+  '  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;',
+  '  padding:12px;display:flex;flex-direction:column;gap:10px;',
+  '}',
+  '.ai-msg{max-width:85%;display:flex;flex-direction:column;gap:3px;}',
+  '.ai-msg.user{align-self:flex-end;align-items:flex-end;}',
+  '.ai-msg.assistant{align-self:flex-start;align-items:flex-start;}',
+  '.ai-bubble{',
+  '  padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.55;',
+  '}',
+  '.ai-msg.user .ai-bubble{',
+  '  background:var(--red);color:white;border-bottom-right-radius:4px;',
+  '}',
+  '.ai-msg.assistant .ai-bubble{',
+  '  background:var(--bg2);color:var(--text);border-bottom-left-radius:4px;',
+  '  border:1px solid var(--border);',
+  '}',
+  '.ai-msg.assistant .ai-bubble.loading{color:var(--text3);font-style:italic;}',
+  /* Input */
+  '#aiInputRow{',
+  '  display:flex;gap:8px;padding:10px 12px;',
+  '  border-top:1px solid var(--border);flex-shrink:0;',
+  '  background:var(--surface);',
+  '}',
+  '#aiInput{',
+  '  flex:1;border:1px solid var(--border-md);border-radius:20px;',
+  '  padding:9px 14px;font-size:13.5px;',
+  '  font-family:var(--font-body);background:var(--bg);color:var(--text);',
+  '  outline:none;resize:none;line-height:1.4;max-height:100px;overflow-y:auto;',
+  '}',
+  '#aiInput:focus{border-color:var(--red);}',
+  '#aiSendBtn{',
+  '  width:36px;height:36px;border-radius:50%;align-self:flex-end;',
+  '  background:var(--red);color:white;border:none;cursor:pointer;',
+  '  display:flex;align-items:center;justify-content:center;font-size:16px;',
+  '  flex-shrink:0;transition:background .15s;',
+  '}',
+  '#aiSendBtn:disabled{background:var(--border-md);cursor:not-allowed;}',
+  '#aiSendBtn:not(:disabled):hover{background:#c0001f;}',
+  '@media(max-width:480px){',
+  '  #aiPanel{right:8px;width:calc(100vw - 16px);}',
+  '  #aiBubble{right:12px;}',
+  '}',
+].join('');
+document.head.appendChild(s);
+
+// ── Inject HTML ───────────────────────────────────────────────────────────────
+var wrap = document.createElement('div');
+wrap.innerHTML = [
+  '<button id="aiBubble" title="Ask AI assistant">&#129302;</button>',
+  '<div id="aiPanel">',
+  '  <div id="aiPanelHdr">',
+  '    <div class="ai-avatar">&#129302;</div>',
+  '    <div><div class="ai-title">Maintenance AI</div><div class="ai-sub">CFA Cherry Creek &#183; Powered by Grok</div></div>',
+  '    <button id="aiClearBtn" title="Clear chat">&#128465;</button>',
+  '  </div>',
+  '  <div id="aiMessages">',
+  '    <div class="ai-msg assistant"><div class="ai-bubble">Hey! I can create tasks, edit the calendar, manage your team, add categories, and answer questions about the store. What do you need?</div></div>',
+  '  </div>',
+  '  <div id="aiInputRow">',
+  '    <textarea id="aiInput" rows="1" placeholder="Ask anything or give a command..."></textarea>',
+  '    <button id="aiSendBtn">&#9658;</button>',
+  '  </div>',
+  '</div>',
+].join('');
+document.body.appendChild(wrap);
+
+// ── Toggle ─────────────────────────────────────────────────────────────────
+document.getElementById('aiBubble').addEventListener('click', function() {
+  _aiOpen = !_aiOpen;
+  document.getElementById('aiPanel').classList.toggle('open', _aiOpen);
+  if (_aiOpen) {
+    document.getElementById('aiBubble').classList.remove('has-unread');
+    document.getElementById('aiInput').focus();
+    scrollAiToBottom();
+  }
+});
+
+document.getElementById('aiClearBtn').addEventListener('click', function() {
+  _aiHistory = [];
+  document.getElementById('aiMessages').innerHTML =
+    '<div class="ai-msg assistant"><div class="ai-bubble">Chat cleared. What do you need?</div></div>';
+});
+
+// ── Send ───────────────────────────────────────────────────────────────────
+document.getElementById('aiInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAiMessage(); }
+});
+document.getElementById('aiSendBtn').addEventListener('click', sendAiMessage);
+
+// ── Auto-resize textarea ───────────────────────────────────────────────────
+document.getElementById('aiInput').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+
+// ── Build context snapshot ─────────────────────────────────────────────────
+function buildContext() {
+  var today = new Date(TODAY_Y, TODAY_M, TODAY_D);
+  var todayStr = today.toDateString();
+  var catList = Object.entries(CAT).map(function(e) {
+    return e[0] + ' (' + e[1].label + ')';
+  }).join(', ');
+  var teamList = users.length
+    ? users.map(function(u) { return u.name + ' (id:' + u.id + ')'; }).join(', ')
+    : 'No team members yet';
+  var overdue = tasks.filter(isOverdue);
+  var upcoming = tasks.filter(function(t) {
+    if (t.done) return false;
+    var d = new Date(t.year, t.month, t.day);
+    return d >= today;
+  }).sort(function(a,b) { return new Date(a.year,a.month,a.day)-new Date(b.year,b.month,b.day); });
+
+  var taskSummary = tasks.slice(0, 80).map(function(t) {
+    var d = new Date(t.year,t.month,t.day);
+    return '[id:' + t.id + '] ' + t.name + ' | ' + FREQ(t.freq) + ' | cat:' + t.cat
+      + ' | due:' + d.toDateString()
+      + (t.done ? ' | DONE' : (isOverdue(t) ? ' | OVERDUE' : ''))
+      + (getUserName(t.assignId) ? ' | assigned:' + getUserName(t.assignId) : '');
+  }).join('\n');
+
+  return [
+    '=== LIVE STORE DATA (as of ' + todayStr + ') ===',
+    'Store: CFA Cherry Creek #03643 / #04821, Denver CO',
+    'Tasks total: ' + tasks.length + ' | Overdue: ' + overdue.length + ' | Upcoming: ' + upcoming.length,
+    'Team: ' + teamList,
+    'Categories: ' + catList,
+    '',
+    'TASK LIST (up to 80):',
+    taskSummary || '(no tasks)',
+    '',
+    '=== AVAILABLE ACTIONS ===',
+    'You can execute JavaScript actions by including a <ACTION> block in your response.',
+    'Format: <ACTION>{"fn":"functionName","args":{...}}</ACTION>',
+    '',
+    'Available functions:',
+    '  addTaskFromAI(name, freq, cat, day, month, year, summary, steps, assignId) — adds a task to calendar + DB',
+    '  editTaskFromAI(id, fields) — edits fields on a task (any of: name,freq,cat,day,month,year,summary,steps)',
+    '  deleteTaskFromAI(id) — deletes a task',
+    '  reschedTaskFromAI(id, day, month, year) — reschedules a task',
+    '  markDoneFromAI(id) — marks a task complete',
+    '  addCategoryFromAI(key, label, color) — adds a new category',
+    '  removeCategoryFromAI(key) — removes a category',
+    '  switchViewFromAI(view) — switches view (calendar/manage/upload/users/history/settings)',
+    '',
+    'Rules: Always include a plain-language explanation of what you did BEFORE the <ACTION> block.',
+    'Rules: Month is 0-indexed (Jan=0, Dec=11). Freq values: daily/weekly/biweekly/monthly/quarterly/yearly.',
+    'Rules: Cat must be one of existing category keys: ' + Object.keys(CAT).join(', ') + '.',
+  ].join('\n');
+}
+
+// ── Execute action from response ──────────────────────────────────────────
+function executeAiAction(actionJson) {
+  try {
+    var a = JSON.parse(actionJson);
+    switch(a.fn) {
+      case 'addTaskFromAI': {
+        var g = a.args;
+        var id = nextId++;
+        var t = {
+          id:id, name:g.name||'Unnamed task', freq:g.freq||'weekly',
+          cat:(CAT[g.cat]?g.cat:'equipment'),
+          day:parseInt(g.day)||TODAY_D, month:parseInt(g.month)||TODAY_M, year:parseInt(g.year)||TODAY_Y,
+          done:false, assignId:parseInt(g.assignId)||0,
+          summary:g.summary||'', steps:g.steps||'', customPattern:''
+        };
+        tasks.push(t);
+        renderCal(); updateStats();
+        if (typeof sbReady !== 'undefined' && sbReady) {
+          sbWrite('AI add task', function(){ return sb.from('tasks').insert({
+            name:t.name,freq:t.freq,cat:t.cat,day:t.day,month:t.month,year:t.year,
+            done:false,assign_id:t.assignId,summary:t.summary,steps:t.steps,custom_pattern:''
+          }); });
+        }
+        return 'Added task "' + t.name + '"';
+      }
+      case 'editTaskFromAI': {
+        var idx = tasks.findIndex(function(x){ return String(x.id)===String(a.args.id); });
+        if (idx === -1) return 'Task not found';
+        Object.assign(tasks[idx], a.args.fields);
+        renderCal(); updateStats();
+        if (typeof sbReady !== 'undefined' && sbReady) {
+          (function(tid, fields){ sbWrite('AI edit task', function(){ return sb.from('tasks').update(fields).eq('id',tid); }); })(a.args.id, a.args.fields);
+        }
+        return 'Updated task "' + tasks[idx].name + '"';
+      }
+      case 'deleteTaskFromAI': {
+        var ti = tasks.findIndex(function(x){ return String(x.id)===String(a.args.id); });
+        if (ti === -1) return 'Task not found';
+        var tn = tasks[ti].name;
+        tasks.splice(ti,1);
+        renderCal(); updateStats();
+        if (typeof sbReady !== 'undefined' && sbReady) {
+          (function(tid){ sbWrite('AI delete', function(){ return sb.from('tasks').delete().eq('id',tid); }); })(a.args.id);
+        }
+        return 'Deleted "' + tn + '"';
+      }
+      case 'reschedTaskFromAI': {
+        var ri = tasks.findIndex(function(x){ return String(x.id)===String(a.args.id); });
+        if (ri === -1) return 'Task not found';
+        tasks[ri].day = parseInt(a.args.day); tasks[ri].month = parseInt(a.args.month); tasks[ri].year = parseInt(a.args.year);
+        renderCal(); updateStats();
+        if (typeof sbReady !== 'undefined' && sbReady) {
+          (function(tid,d,m,y){ sbWrite('AI resched', function(){ return sb.from('tasks').update({day:d,month:m,year:y}).eq('id',tid); }); })(a.args.id,tasks[ri].day,tasks[ri].month,tasks[ri].year);
+        }
+        return 'Rescheduled "' + tasks[ri].name + '"';
+      }
+      case 'markDoneFromAI': {
+        var di = tasks.findIndex(function(x){ return String(x.id)===String(a.args.id); });
+        if (di === -1) return 'Task not found';
+        tasks[di].done = true;
+        renderCal(); updateStats();
+        if (typeof sbReady !== 'undefined' && sbReady) {
+          (function(tid){ sbWrite('AI done', function(){ return sb.from('tasks').update({done:true}).eq('id',tid); }); })(a.args.id);
+        }
+        writeCompletionLog(tasks[di], true, 'AI Assistant');
+        return 'Marked "' + tasks[di].name + '" complete';
+      }
+      case 'addCategoryFromAI': {
+        var ck = a.args.key; var cl = a.args.label; var cc = a.args.color||'#607D8B';
+        if (CAT[ck]) return 'Category "' + ck + '" already exists';
+        CAT[ck] = { label:cl, dot:cc, bg:cc+'18', text:cc, border:cc+'44' };
+        if (typeof saveCats !== 'undefined') saveCats();
+        if (typeof renderCatLegend !== 'undefined') renderCatLegend();
+        return 'Added category "' + cl + '"';
+      }
+      case 'removeCategoryFromAI': {
+        if (!CAT[a.args.key]) return 'Category not found';
+        var clabel = CAT[a.args.key].label;
+        delete CAT[a.args.key];
+        if (typeof saveCats !== 'undefined') saveCats();
+        if (typeof renderCatLegend !== 'undefined') renderCatLegend();
+        return 'Removed category "' + clabel + '"';
+      }
+      case 'switchViewFromAI': {
+        if (typeof switchView !== 'undefined') switchView(a.args.view);
+        return 'Switched to ' + a.args.view + ' view';
+      }
+      default:
+        return 'Unknown function: ' + a.fn;
+    }
+  } catch(e) {
+    console.error('[AI action]', e.message, actionJson);
+    return 'Action error: ' + e.message;
+  }
+}
+
+// ── Append message bubble ─────────────────────────────────────────────────
+function appendMsg(role, text, loading) {
+  var msgs = document.getElementById('aiMessages');
+  var div = document.createElement('div');
+  div.className = 'ai-msg ' + role;
+  div.innerHTML = '<div class="ai-bubble' + (loading ? ' loading' : '') + '">'
+    + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')
+    + '</div>';
+  msgs.appendChild(div);
+  scrollAiToBottom();
+  return div;
+}
+
+function scrollAiToBottom() {
+  var msgs = document.getElementById('aiMessages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ── Main send ─────────────────────────────────────────────────────────────
+async function sendAiMessage() {
+  if (_aiLoading) return;
+  var input = document.getElementById('aiInput');
+  var text = (input.value || '').trim();
+  if (!text) return;
+
+  var key = localStorage.getItem('grokApiKey');
+  if (!key) {
+    appendMsg('assistant', 'No Grok API key saved. Go to Settings → Grok API Key to add it.');
+    return;
+  }
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('aiSendBtn').disabled = true;
+
+  appendMsg('user', text);
+  _aiHistory.push({ role:'user', content: text });
+
+  var loadingDiv = appendMsg('assistant', 'Thinking…', true);
+  _aiLoading = true;
+
+  var sysPrompt = (localStorage.getItem('aiInstructions') || '')
+    + '\n\n' + buildContext();
+
+  var messages = [{ role:'system', content: sysPrompt }]
+    .concat(_aiHistory);
+
+  try {
+    var resp = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key
+      },
+      body: JSON.stringify({
+        model: 'grok-3',
+        max_tokens: 1200,
+        messages: messages
+      })
+    });
+
+    if (!resp.ok) {
+      var et = await resp.text();
+      throw new Error('API ' + resp.status + ': ' + et.slice(0,80));
+    }
+
+    var data = await resp.json();
+    var reply = (data.choices && data.choices[0])
+      ? data.choices[0].message.content || ''
+      : '';
+
+    // Extract and execute any <ACTION> blocks
+    var actionResults = [];
+    reply = reply.replace(/<ACTION>([\s\S]*?)<\/ACTION>/g, function(_, json) {
+      var result = executeAiAction(json.trim());
+      actionResults.push(result);
+      return '';
+    });
+    reply = reply.trim();
+
+    // Append action results to reply if any
+    if (actionResults.length) {
+      reply = (reply ? reply + '\n\n' : '') + '✓ ' + actionResults.join('\n✓ ');
+    }
+    if (!reply) reply = 'Done.';
+
+    // Update the loading bubble
+    var bubble = loadingDiv.querySelector('.ai-bubble');
+    if (bubble) {
+      bubble.classList.remove('loading');
+      bubble.innerHTML = reply.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    }
+
+    _aiHistory.push({ role:'assistant', content: reply });
+
+    // If panel is closed, show unread dot
+    if (!_aiOpen) document.getElementById('aiBubble').classList.add('has-unread');
+
+  } catch(err) {
+    var bubble = loadingDiv.querySelector('.ai-bubble');
+    if (bubble) {
+      bubble.classList.remove('loading');
+      bubble.style.color = 'var(--red)';
+      bubble.textContent = 'Error: ' + err.message;
+    }
+  }
+
+  _aiLoading = false;
+  document.getElementById('aiSendBtn').disabled = false;
+  scrollAiToBottom();
+}
+
+})(); // end IIFE
 
 
 
