@@ -1009,6 +1009,194 @@ body {
   padding:10px 16px; border-bottom:1px solid var(--border); flex-shrink:0;
 }
 
+/* ── INSTRUCTIONS FULL-SCREEN VIEW ───────────────────────────────────────── */
+.instr-view {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+.instr-view.open {
+  transform: translateX(0);
+}
+.instr-view-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.instr-back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  color: var(--text2);
+  padding: 4px 10px 4px 0;
+  line-height: 1;
+  min-width: 40px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.instr-back-btn:hover { color: var(--text); }
+.instr-view-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  line-height: 1.3;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.instr-view-cat {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.instr-edit-btn {
+  background: none;
+  border: 1px solid var(--border-md);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: var(--font-body);
+  min-height: 36px;
+  white-space: nowrap;
+}
+.instr-edit-btn:hover { background: var(--bg2); }
+.instr-view-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 20px;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  max-width: 680px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+.instr-section-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text3);
+  margin-bottom: 10px;
+  margin-top: 28px;
+}
+.instr-section-lbl:first-child { margin-top: 0; }
+.instr-summary-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  font-size: 15px;
+  color: var(--text2);
+  line-height: 1.7;
+}
+.instr-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.instr-step-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.instr-step-row:last-child { border-bottom: none; }
+.instr-step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--red);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.instr-step-text {
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.6;
+  flex: 1;
+  padding-top: 6px;
+}
+.instr-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: 2px dashed var(--border-md);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text3);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+  font-family: var(--font-body);
+  transition: all .15s;
+}
+.instr-upload-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+.instr-media-thumb {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  aspect-ratio: 4/3;
+  cursor: pointer;
+  position: relative;
+}
+.instr-media-thumb img,
+.instr-media-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.instr-media-del {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0,0,0,.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 </style>
 </head>
 <body>
@@ -3710,38 +3898,75 @@ function openEditFromInstr() {
 function renderInstrBody(task) {
   var body = document.getElementById('instrViewBody');
   if (!body) return;
-  var html = '';
+  var parts = [];
+
+  // Summary
   if (task.summary) {
-    html += '<div class="instr-section-lbl">Summary</div>';
-    html += '<div class="instr-summary-box">' + (task.summary||'') + '</div>';
+    parts.push(
+      '<div class="instr-section-lbl">Summary</div>' +
+      '<div class="instr-summary-box">' + escapeHtml(task.summary) + '</div>'
+    );
   }
-  if (task.steps) {
-    html += '<div class="instr-section-lbl">Step-by-Step</div>';
+
+  // Step-by-step
+  if (task.steps && task.steps.trim()) {
     var steps = task.steps.split('\n').filter(function(s){ return s.trim(); });
-    steps.forEach(function(s, i) {
-      var ci = s.indexOf(':');
-      var text = ci > -1 ? s.slice(ci+1).trim() : s.trim();
-      html += '<div class="instr-step-row"><div class="instr-step-num">' + (i+1) + '</div><div class="instr-step-text">' + text + '</div></div>';
-    });
+    if (steps.length) {
+      var stepRows = steps.map(function(s, i) {
+        var ci = s.indexOf(':');
+        var text = ci > -1 ? s.slice(ci + 1).trim() : s.trim();
+        if (!text) return '';
+        return '<div class="instr-step-row">' +
+          '<div class="instr-step-num">' + (i + 1) + '</div>' +
+          '<div class="instr-step-text">' + escapeHtml(text) + '</div>' +
+          '</div>';
+      }).filter(Boolean).join('');
+
+      if (stepRows) {
+        parts.push(
+          '<div class="instr-section-lbl">Step-by-Step</div>' +
+          '<div class="instr-steps-list">' + stepRows + '</div>'
+        );
+      }
+    }
   }
-  html += '<div class="instr-section-lbl">Photos &amp; Video</div>';
+
+  // Media
   var media = getTaskMedia(task);
+  var mediaHtml = '';
   if (media.length) {
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:4px;">';
-    media.forEach(function(m) {
+    var thumbs = media.map(function(m) {
       var isVid = /\.(mp4|mov|webm|m4v)/i.test(m.url);
       var safe = encodeURIComponent(m.url);
-      html += '<div style="border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--bg2);aspect-ratio:4/3;position:relative;" data-mediaurl="' + safe + '" data-taskid="' + task.id + '">';
-      html += isVid ? '<video src="' + m.url + '" preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>' : '<img src="' + m.url + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
-      html += '<button data-action="deletemedia" data-mediaurl="' + safe + '" data-taskid="' + task.id + '" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:white;border:none;border-radius:50%;width:26px;height:26px;font-size:14px;cursor:pointer;">x</button>';
-      html += '</div>';
-    });
-    html += '</div>';
+      return '<div class="instr-media-thumb" data-mediaurl="' + safe + '" data-taskid="' + task.id + '">' +
+        (isVid
+          ? '<video src="' + m.url + '" preload="metadata" muted playsinline></video>'
+          : '<img src="' + m.url + '" alt="">') +
+        '<button class="instr-media-del" data-action="deletemedia" data-mediaurl="' + safe + '" data-taskid="' + task.id + '">&#215;</button>' +
+        '</div>';
+    }).join('');
+    mediaHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:8px;">' + thumbs + '</div>';
   }
-  html += '<button class="instr-upload-btn" data-instr-action="upload" data-tid="' + task.id + '" style="margin-top:8px;"><span style="font-size:18px;">📷</span> Add photo or video</button>';
-  html += '<div id="instrUploadStatus" style="margin-top:6px;font-size:12px;color:var(--text3);"></div>';
-  body.innerHTML = html;
+
+  parts.push(
+    '<div class="instr-section-lbl">Photos &amp; Video</div>' +
+    mediaHtml +
+    '<button class="instr-upload-btn" data-instr-action="upload" data-tid="' + task.id + '">' +
+    '<span style="font-size:20px;">&#128247;</span> Add photo or video</button>' +
+    '<div id="instrUploadStatus" style="margin-top:6px;font-size:12px;color:var(--text3);text-align:center;"></div>'
+  );
+
+  body.innerHTML = parts.join('');
 }
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 
 function getTaskMedia(task) {
   var media = [];
