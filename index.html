@@ -6,6 +6,7 @@
 <title>CFA Maintenance Hub</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>if(typeof emailjs!=="undefined")emailjs.init("MYl9llCKPT-esh1aT");</script>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Roboto:wght@300;400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 @font-face {
@@ -2088,26 +2089,26 @@ function switchView(v){
   vEl.classList.add('active');vEl.style.display='flex';
   document.querySelectorAll('.sidebar-item').forEach(el=>el.classList.remove('active'));
   const sn=document.getElementById('nav-'+v);if(sn)sn.classList.add('active');
-  document.querySelectorAll('.mobile-nav-item').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item,.bottom-nav-item').forEach(el=>el.classList.remove('active'));
   const mn=document.getElementById('mnav-'+v);if(mn)mn.classList.add('active');
   if(v==='tasks')renderTaskTable();
   if(v==='manage')renderManage();
   if(v==='users'){renderUserList();renderEmailLog();}
-  document.getElementById('sidebar').classList.remove('open');
+  // sidebar close handled by closeMobileSidebar()
 }
 function toggleSidebar(){
   var sidebar=document.getElementById('sidebar');
   var scrim=document.getElementById('mobileSidebarScrim');
   if(window.innerWidth<768){
-    var isOpen=!sidebar.classList.contains('collapsed');
-    sidebar.classList.toggle('collapsed');
+    var isOpen=sidebar.classList.contains('mobile-open');
+    sidebar.classList.toggle('mobile-open');
     if(scrim) scrim.style.display=isOpen?'none':'';
   } else {
     sidebar.classList.toggle('collapsed');
   }
 }
 function closeMobileSidebar(){
-  document.getElementById('sidebar').classList.add('collapsed');
+  document.getElementById('sidebar').classList.remove('mobile-open');
   var scrim=document.getElementById('mobileSidebarScrim');
   if(scrim) scrim.style.display='none';
 }
@@ -2414,8 +2415,9 @@ function sendAssignmentEmail(task,user){
   if(!emailEnabled){entry.sent=false;entry.status='disabled';return entry;}
 
   if(typeof emailjs==='undefined'){
-    console.warn('[email] EmailJS not loaded');
-    entry.status='error: SDK not loaded';
+    // SDK not yet loaded — retry once after short delay
+    setTimeout(function(){ sendAssignmentEmail(task, user); }, 800);
+    entry.status='pending: retrying';
     return entry;
   }
 
