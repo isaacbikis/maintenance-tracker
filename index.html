@@ -2987,12 +2987,17 @@ function setSyncDot(state) {
   el.title = labels[state] || 'Database sync';
 }
 
+var _bannerTimer = null;
 function showSbBanner(type, msg) {
   var b = document.getElementById('sbBanner');
   var t = document.getElementById('sbBannerText');
   if (!b || !t) return;
   b.className = 'sb-banner ' + type;
   t.textContent = msg;
+  clearTimeout(_bannerTimer);
+  // Auto-dismiss all banners at 2.5s
+  var delay = 2500;
+  _bannerTimer = setTimeout(hideSbBanner, delay);
 }
 function hideSbBanner() {
   var b = document.getElementById('sbBanner');
@@ -3104,7 +3109,7 @@ async function initSupabase() {
 
     // Fetch tasks + users + last 300 completion log rows in parallel
     var results = await Promise.all([
-      sb.from('tasks').select('*').order('created_at', { ascending: true }),
+      sb.from('tasks').select('*').order('id', { ascending: true }),
       sb.from('users').select('*').order('id',         { ascending: true }),
       sb.from('completion_log').select('*').order('completed_at', { ascending: false }).limit(300)
     ]);
@@ -3134,7 +3139,7 @@ async function initSupabase() {
     sbReady = true;
     hideSbBanner();
     setSyncDot('live');
-    showToast('✓ Synced with Supabase', 'success');
+    showToast('✓ Connected', 'success');
 
     // Re-render everything
     renderCal();
@@ -3235,7 +3240,10 @@ async function writeCompletionLog(task, markingDone) {
   if (document.getElementById('view-history').classList.contains('active')) renderHistoryList();
 
   if (sbReady) {
-    sbWrite('Completion log', function() { return sb.from('completion_log').insert(logRow); });
+    // Silent completion log — don't show error toast if table missing
+    sb.from('completion_log').insert(logRow).then(function(res){
+      if (res.error) console.warn('[completion_log]', res.error.message);
+    });
   }
 }
 
@@ -3368,15 +3376,25 @@ async function loadCompletionHistory() {
 
       if (sbReady) {
         var dbRow2 = { name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), done:false, assign_id:assignId, summary:summary, steps:steps, custom_pattern:'' };
-        sbWrite('Task insert', async function() {
+        (async function() {
+          // Try full insert first
           var res = await sb.from('tasks').insert(dbRow2).select().single();
-          if (!res.error && res.data) {
-            // Swap temp id for real DB id
+          if (res.error) {
+            // If optional columns missing, retry with just core columns
+            var coreRow = { name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), done:false, assign_id:assignId };
+            var res2 = await sb.from('tasks').insert(coreRow).select().single();
+            if (res2.error) {
+              console.error('[insert]', res2.error.message);
+              console.error('[insert fallback]', res2.error.message); showToast('Saved locally — will sync when reconnected', '');
+              return;
+            }
+            res = res2;
+          }
+          if (res.data) {
             var idx = tasks.findIndex(function(t){return t.id===tempId;});
             if (idx !== -1) tasks[idx].id = res.data.id;
           }
-          return res;
-        });
+        })();
       }
       if (assignId) { var u2 = getUserById(assignId); if (u2) { sendAssignmentEmail(newTask, u2); showToast('📧 Email sent to ' + u2.name, 'success'); } }
     }
@@ -3413,15 +3431,20 @@ async function loadCompletionHistory() {
     if (assignId) { var u = getUserById(assignId); if (u) sendAssignmentEmail(task, u); }
 
     if (sbReady) {
-      var dbRow = { name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), done:false, assign_id:assignId, summary:'', steps:'', custom_pattern:'' };
-      sbWrite('Manual task insert', async function() {
+      (async function() {
+        var dbRow = { name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), done:false, assign_id:assignId, summary:'', steps:'', custom_pattern:'' };
         var res = await sb.from('tasks').insert(dbRow).select().single();
-        if (!res.error && res.data) {
+        if (res.error) {
+          var coreRow = { name:name, freq:freq, cat:cat, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), done:false, assign_id:assignId };
+          var res2 = await sb.from('tasks').insert(coreRow).select().single();
+          if (res2.error) { showToast('Save failed: ' + res2.error.message, 'error'); return; }
+          res = res2;
+        }
+        if (res.data) {
           var idx = tasks.findIndex(function(t){return t.id===tempId;});
           if (idx !== -1) tasks[idx].id = res.data.id;
         }
-        return res;
-      });
+      })();
     }
   };
 })();
@@ -3781,13 +3804,13 @@ async function deleteInstrMedia(url, taskId) {
   var path = url.split('/task-photos/')[1];
   if (task._photoUrl === url) {
     task._photoUrl = null;
-    if (typeof sbWrite !== 'undefined' && sbReady) sbWrite('Clear photo', function(){ return sbPatch('tasks?id=eq.' + taskId, { photo_url: null }); });
+    if (typeof sbWrite !== 'undefined' && sbReady) sbWrite('Clear photo', function(){ return sb.from('tasks').update({ photo_url: null }).eq('id', taskId); });
   } else {
     try {
       var arr = task._mediaUrls ? JSON.parse(task._mediaUrls) : [];
       arr = arr.filter(function(u){ return u !== url; });
       task._mediaUrls = JSON.stringify(arr);
-      if (typeof sbWrite !== 'undefined' && sbReady) sbWrite('Update media', function(){ return sbPatch('tasks?id=eq.' + taskId, { media_urls: task._mediaUrls }); });
+      if (typeof sbWrite !== 'undefined' && sbReady) sbWrite('Update media', function(){ return sb.from('tasks').update({ media_urls: task._mediaUrls }).eq('id', taskId); });
     } catch(e) {}
   }
   try {
@@ -3861,11 +3884,11 @@ async function uploadMediaToTask(taskId, file, context) {
     var publicUrl = 'https://cjgoaufrfhsndfirkdxt.supabase.co/storage/v1/object/public/task-photos/' + path;
     if (!task._photoUrl) {
       task._photoUrl = publicUrl;
-      if (typeof sbWrite !== 'undefined' && sbReady) sbWrite('Photo', function(){ return sbPatch('tasks?id=eq.' + taskId, { photo_url: publicUrl }); });
+      if (typeof sbWrite !== 'undefined' && sbReady) sbWrite('Photo', function(){ return sb.from('tasks').update({ photo_url: publicUrl }).eq('id', taskId); });
     } else {
       var arr = []; try { arr = task._mediaUrls ? JSON.parse(task._mediaUrls) : []; } catch(e) {}
       arr.push(publicUrl); task._mediaUrls = JSON.stringify(arr);
-      if (typeof sbWrite !== 'undefined' && sbReady) sbWrite('Media', function(){ return sbPatch('tasks?id=eq.' + taskId, { media_urls: task._mediaUrls }); });
+      if (typeof sbWrite !== 'undefined' && sbReady) sbWrite('Media', function(){ return sb.from('tasks').update({ media_urls: task._mediaUrls }).eq('id', taskId); });
     }
     if (context === 'instr') { var t2 = tasks.find(function(t){ return String(t.id) === String(taskId); }); if (t2) renderInstrBody(t2); }
     if (context === 'modal') renderModalPhotoGrid(task);
@@ -3992,12 +4015,15 @@ async function parseUploadedFiles() {
         var tid = nextId++;
         var t = { id:tid, name:ex.name, freq:fv, cat:cv, day:d.getDate(), month:d.getMonth(), year:d.getFullYear(), done:false, assignId:assignId, summary:ex.summary||'', steps:ex.steps||'', customPattern:'' };
         tasks.push(t); totalAdded++;
-        if (typeof sbWrite !== 'undefined' && sbReady) {
+        if (typeof sb !== 'undefined' && sbReady) {
           (function(task, tempId){
-            sbWrite('Insert task', async function(){
-              var ins = await sbPost('tasks', { name:task.name, freq:task.freq, cat:task.cat, day:task.day, month:task.month, year:task.year, done:false, assign_id:assignId, summary:task.summary, steps:task.steps });
-              if (ins && ins[0]) { var idx=tasks.findIndex(function(x){return x.id===tempId;}); if(idx!==-1) tasks[idx].id=ins[0].id; }
-            });
+            (async function(){
+              var ins = await sb.from('tasks').insert({ name:task.name, freq:task.freq, cat:task.cat, day:task.day, month:task.month, year:task.year, done:false, assign_id:assignId, summary:task.summary, steps:task.steps }).select().single();
+              if (ins.error) {
+                ins = await sb.from('tasks').insert({ name:task.name, freq:task.freq, cat:task.cat, day:task.day, month:task.month, year:task.year, done:false, assign_id:assignId }).select().single();
+              }
+              if (!ins.error && ins.data) { var idx=tasks.findIndex(function(x){return x.id===tempId;}); if(idx!==-1) tasks[idx].id=ins.data.id; }
+            })();
           })(t, tid);
         }
       });
@@ -4320,7 +4346,7 @@ function quickCompleteOverdue(taskId) {
     task.done = true;
     task._completedBy = name;
     if (typeof sbWrite !== 'undefined' && sbReady) {
-      sbWrite('Mark done', function(){ return sbPatch('tasks?id=eq.' + taskId, { done: true }); });
+      sbWrite('Mark done', function(){ return sb.from('tasks').update({ done: true }).eq('id', taskId); });
       writeCompletionLog(task, true, name);
     }
     renderCal(); updateStats();
@@ -4429,7 +4455,7 @@ function closeWhoModal() {
           if (src && dst) { dst.innerHTML = src.innerHTML; wireSheetClicks(dst); }
         }
         if (typeof sbWrite !== 'undefined' && sbReady) {
-          sbWrite('Mark done', function(){ return sbPatch('tasks?id=eq.' + id, { done: true }); });
+          sbWrite('Mark done', function(){ return sb.from('tasks').update({ done: true }).eq('id', id); });
           writeCompletionLog(task, true, completedBy);
         }
         showToast('\u2713 ' + task.name + ' \u2014 ' + completedBy, 'success');
@@ -4460,7 +4486,7 @@ function closeWhoModal() {
     var histView = document.getElementById('view-history');
     if (histView && histView.classList.contains('active')) renderHistoryList();
     if (typeof sbWrite !== 'undefined' && sbReady) {
-      sbWrite('Completion log', function(){ return sbPost('completion_log', logRow); });
+      sbWrite('Completion log', function(){ return sb.from('completion_log').insert(logRow); });
     }
   };
 })();
