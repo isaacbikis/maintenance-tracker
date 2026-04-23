@@ -1072,6 +1072,11 @@ body {
     <button class="sidebar-item" id="nav-settings" onclick="switchView('settings')"><span class="si-icon">⚙️</span><span data-i18n="settings">Settings</span></button>
   </div>
   <div class="sidebar-divider"></div>
+  <div id="overdueAlert" style="display:none;margin:4px 8px 0;background:var(--red-light);border:1px solid var(--red-mid);border-radius:8px;padding:8px 12px;cursor:pointer;" onclick="openStatPanel('overdue')">
+    <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.05em;">&#9888;&#65039; Overdue</div>
+    <div id="overdueAlertCount" style="font-size:13px;font-weight:500;color:var(--text);margin-top:2px;"></div>
+  </div>
+  <div class="sidebar-divider"></div>
   <div class="cat-legend">
     <div class="sidebar-label" data-i18n="categories">Categories</div>
     <div class="cat-dot-row"><div class="cat-dot" style="background:#E4002B;"></div><span data-i18n="cat_fryer">Fryer</span></div>
@@ -1199,33 +1204,67 @@ body {
 <!-- UPLOAD VIEW -->
 <div class="view" id="view-upload">
   <div class="scrollable-view">
-    <div class="section-hdr"><div><div class="section-title" data-i18n="upload_manual">Upload Maintenance Manual</div><div class="section-sub" data-i18n="upload_sub">AI extracts tasks automatically, or add manually</div></div></div>
-    <div class="upload-grid">
-      <div class="upload-card">
-        <div class="upload-card-hdr">📄 <span data-i18n="upload_manual">Upload Manual</span></div>
-        <div class="upload-card-body">
-          <div id="uploadedFilesArea"></div>
-          <div class="drop-zone" id="dropZone" ondragover="doDragOver(event)" ondragleave="doDragLeave(event)" ondrop="doDrop(event)" onclick="document.getElementById('fileInput').click()">
-            <div class="drop-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 16V8M12 8L9 11M12 8l3 3" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 15v2a4 4 0 004 4h10a4 4 0 004-4v-2" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round"/></svg></div>
-            <div class="drop-title" data-i18n="drop_file">Drop file here or click to browse</div>
-            <div class="drop-sub" data-i18n="drop_sub">PDF, DOCX, or TXT · tasks auto-extracted via AI</div>
-            <input type="file" id="fileInput" style="display:none" accept=".pdf,.docx,.txt" onchange="handleFiles(event.target.files)">
-          </div>
+    <div class="section-hdr"><div><div class="section-title">Upload Manual</div><div class="section-sub">Drop a PDF &#8212; Grok extracts tasks automatically</div></div></div>
+
+    <!-- No key warning -->
+    <div id="uploadApiWarn" style="display:none;background:var(--amber-light);border:1px solid #FFD0A0;border-radius:8px;padding:12px 14px;font-size:13px;color:#7A4800;margin-bottom:14px;line-height:1.5;">&#9888;&#65039; No Grok API key saved. Enter it below &#8212; only needs to be entered once.</div>
+
+    <!-- API key card -->
+    <div class="settings-card" id="uploadApiKeyCard" style="margin-bottom:14px;">
+      <div class="settings-card-hdr" style="cursor:pointer;">
+        <div class="settings-icon" style="background:#EEF;">&#128273;</div>
+        <div><div class="settings-title">Grok API Key</div><div class="settings-sub">Saved permanently &#8212; only change if you get a new key</div></div>
+        <div id="uploadApiStatus" class="api-status none" style="margin-left:auto;font-size:11px;">&#9675; Not saved</div>
+      </div>
+      <div class="settings-body" id="uploadApiKeyBody">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="api-key-wrap" style="flex:1;"><input class="form-input api-key-input" id="uploadApiKeyInput" type="password" placeholder="xai-xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off"><button class="api-key-toggle" id="uploadApiKeyToggle">Show</button></div>
+          <button class="save-btn" id="uploadApiKeySaveBtn">Save</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px;">Get your key at <strong style="color:var(--text2);">console.x.ai</strong> &#183; Uses grok-3</div>
+      </div>
+    </div>
+
+    <!-- File drop -->
+    <div class="upload-card" style="margin-bottom:14px;">
+      <div class="upload-card-hdr">&#128196; Upload Manual (PDF, DOCX, TXT)</div>
+      <div class="upload-card-body">
+        <div id="uploadedFilesArea"></div>
+        <div class="drop-zone" id="dropZone" ondragover="doDragOver(event)" ondragleave="doDragLeave(event)" ondrop="doDrop(event)" onclick="document.getElementById('fileInput').click()">
+          <div class="drop-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 16V8M12 8L9 11M12 8l3 3" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 15v2a4 4 0 004 4h10a4 4 0 004-4v-2" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div class="drop-title">Drop file or click to browse</div>
+          <div class="drop-sub">PDF, DOCX, or TXT &#183; tasks extracted automatically</div>
+          <input type="file" id="fileInput" style="display:none" accept=".pdf,.docx,.txt" onchange="handleFiles(event.target.files)">
         </div>
       </div>
-      <div class="upload-card">
-        <div class="upload-card-hdr">✏️ <span data-i18n="add_manually">Add Task Manually</span></div>
-        <div class="upload-card-body">
-          <div class="form-field"><label class="form-label" data-i18n="task_name">Task Name</label><input class="form-input" id="manualName" type="text"></div>
-          <div class="form-2col">
-            <div class="form-field"><label class="form-label" data-i18n="frequency">Frequency</label><select class="form-input" id="manualFreq"></select></div>
-            <div class="form-field"><label class="form-label" data-i18n="category">Category</label><select class="form-input" id="manualCat"></select></div>
-          </div>
-          <div class="form-field"><label class="form-label" data-i18n="start_date">Start Date</label><input class="form-input" id="manualDate" type="date"></div>
-          <div class="form-field"><label class="form-label" data-i18n="assign_to">Assign To</label><select class="form-input" id="manualAssign"><option value="0">—</option></select></div>
-          <div id="manualToastArea" style="margin-bottom:6px;"></div>
-          <button class="btn-primary" style="width:100%;justify-content:center;" onclick="addManualTask()" data-i18n="add_to_calendar">Add to Calendar</button>
+    </div>
+
+    <!-- Instructions to Grok -->
+    <div class="upload-card" style="margin-bottom:14px;">
+      <div class="upload-card-hdr">&#128172; Instructions to Grok</div>
+      <div class="upload-card-body">
+        <textarea class="form-input" id="grokInstructions" rows="3" style="resize:vertical;min-height:80px;font-size:13px;" placeholder="e.g. Focus on fryer tasks only. Use weekly frequency unless stated otherwise."></textarea>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px;">Optional &#8212; tells Grok how to interpret the manual.</div>
+      </div>
+    </div>
+
+    <!-- Default settings -->
+    <div class="upload-card">
+      <div class="upload-card-hdr">&#9881;&#65039; Default Task Settings</div>
+      <div class="upload-card-body">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Applied to extracted tasks when not specified in the document.</div>
+        <div class="form-2col">
+          <div class="form-field"><label class="form-label">Default Frequency</label><select class="form-input" id="manualFreq"></select></div>
+          <div class="form-field"><label class="form-label">Default Category</label><select class="form-input" id="manualCat"></select></div>
         </div>
+        <div class="form-field"><label class="form-label">Start Date</label><input class="form-input" id="manualDate" type="date"></div>
+        <div class="form-field"><label class="form-label">Assign To</label><select class="form-input" id="manualAssign"><option value="0">&#8212;</option></select></div>
+        <div id="manualToastArea" style="margin-bottom:6px;"></div>
+        <div id="uploadProgress" style="display:none;margin-bottom:8px;">
+          <div style="background:var(--bg2);border-radius:4px;height:4px;overflow:hidden;"><div id="uploadProgressBar" style="background:var(--red);height:100%;width:0%;transition:width .4s;"></div></div>
+          <div id="uploadProgressLabel" style="font-size:11px;color:var(--text3);margin-top:4px;">Sending to Grok&#8230;</div>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;" id="uploadParseBtn" onclick="parseUploadedFiles()">&#129302; Parse with Grok</button>
       </div>
     </div>
   </div>
@@ -1328,7 +1367,7 @@ body {
 <!-- BOTTOM NAV (mobile) -->
 <nav class="bottom-nav">
   <div class="bottom-nav-items">
-    <button class="bottom-nav-item active" id="mnav-calendar" onclick="switchView('calendar')"><span class="bni-icon">📅</span><span class="bni-label" data-i18n="calendar">Calendar</span></button>
+    <button class="bottom-nav-item active" id="mnav-calendar" style="position:relative;" onclick="switchView('calendar')"><span class="bni-icon">📅</span><span class="bni-label" data-i18n="calendar">Calendar</span><span class="overdue-nav-badge" id="overdueNavBadge" style="display:none;"></span></button>
     <button class="bottom-nav-item" id="mnav-tasks" onclick="switchView('tasks')"><span class="bni-icon">📋</span><span class="bni-label" data-i18n="all_tasks">Tasks</span></button>
     <button class="bottom-nav-item" id="mnav-manage" onclick="switchView('manage')"><span class="bni-icon">✏️</span><span class="bni-label" data-i18n="manage_tasks">Manage</span></button>
     <button class="bottom-nav-item" id="mnav-history" onclick="switchView('history')"><span class="bni-icon">📜</span><span class="bni-label">Log</span></button>
@@ -1666,10 +1705,13 @@ function FREQ(k) { return t('freq_'+k); }
 const ROLE_COLORS = {team:['#E6F4EA','#137333'],lead:['#E8F0FE','#1967D2'],manager:['#FEF3E2','#B06000'],director:['#FCE8E6','#C5221F']};
 const AVATAR_COLORS = ['#E4002B','#1967D2','#188038','#E37400','#8A8880','#D4537E','#7B5EA7','#1A7A6E'];
 
-const TODAY_D=6, TODAY_M=3, TODAY_Y=2026;  // April 6, 2026 (month is 0-indexed)
+// Dynamic today — updates each time the page loads
+const _td=new Date();
+const TODAY_D=_td.getDate(), TODAY_M=_td.getMonth(), TODAY_Y=_td.getFullYear();
 let calView='month';
 let curMonth=TODAY_M, curYear=TODAY_Y;
-let weekStartDate=new Date(TODAY_Y,TODAY_M,5); // Sunday April 5, 2026
+// Start week on the Sunday of the current week
+let weekStartDate=(function(){var d=new Date(TODAY_Y,TODAY_M,TODAY_D);d.setDate(d.getDate()-d.getDay());return d;})(); 2026
 let nextId=100, nextUserId=10;
 let editingId=null, reschedId=null, editingUserId=null;
 let activeFilter='all', activeCatFilter=null;
@@ -2043,42 +2085,7 @@ function renderDayPanelList(){
     list.innerHTML=`<div class="no-tasks" style="padding:14px 4px;">${t('no_tasks_day')}</div>`;
     return;
   }
-  list.innerHTML=dayTasks.map(task=>{
-    const c=CAT[task.cat];
-    const hasInstructions=task.summary||task.steps;
-    return `<div class="day-task-item${task.done?' done':''}" style="background:${c.bg};border-color:${task.done?c.border:'transparent'};">
-      <div style="display:flex;align-items:flex-start;gap:8px;">
-        <div class="day-task-checkbox" onclick="toggleTaskAndRefresh(${task.id})">${task.done?'<svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4l2 2L6.5 2" stroke="#188038" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}</div>
-        <div style="flex:1;min-width:0;">
-          <div class="day-task-name" style="color:${c.text};">${task.name}</div>
-          <div class="day-task-meta">${task.freq==='custom'&&task.customPattern?task.customPattern:FREQ(task.freq)}${getUserName(task.assignId)?' · '+getUserName(task.assignId):''}</div>
-        </div>
-        <span class="cat-pill" style="background:${c.bg};color:${c.text};border:1px solid ${c.border};font-size:10px;">${catLabel(task.cat)}</span>
-      </div>
-      ${hasInstructions?`
-      <div style="margin-top:8px;">
-        <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" onclick="toggleInstructions(${task.id})">
-          📋 <span id="instr-btn-${task.id}">${t('show_steps')}</span>
-        </button>
-        <div class="task-instructions-wrap" id="instr-wrap-${task.id}">
-          <div class="instructions-content">
-            ${task.summary?`<div class="instructions-summary"><strong>${t('show_summary')}:</strong> ${task.summary}</div>${task.steps?'<hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:8px 0;">':''}`:''}
-            ${task.steps?task.steps.split('\n').filter(s=>s.trim()).map((s,i)=>{
-              const colonIdx=s.indexOf(':');
-              const stepLabel=colonIdx>-1?s.slice(0,colonIdx+1):'';
-              const stepText=colonIdx>-1?s.slice(colonIdx+1).trim():s;
-              return `<div class="instructions-step"><div class="instructions-step-num">${i+1}</div><div class="instructions-step-text">${stepText}</div></div>`;
-            }).join(''):''}
-          </div>
-        </div>
-      </div>`:''}
-      <div class="day-task-actions" style="margin-top:8px;">
-        <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" onclick="openEditModal(${task.id})">✏️ Edit</button>
-        <button class="task-instructions-btn" style="color:${c.text};border-color:${c.border};" onclick="openReschedModal(${task.id})">📅 Reschedule</button>
-        <button class="task-instructions-btn" style="color:var(--red);border-color:var(--red-mid);background:var(--red-light);" onclick="confirmDelete(${task.id})">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
+  list.innerHTML=dayTasks.map(task=>taskCardHTML(task)).join('');
 }
 
 function toggleInstructions(taskId){
@@ -3598,6 +3605,50 @@ async function loadCompletionHistory() {
 setTimeout(initSupabase, 300);
 
 
+
+// ── TASK ACTION DELEGATION (day panel + sheet) ────────────────────────────────
+function handleTaskAction(e) {
+  var el = e.target.closest('[data-action]');
+  if (!el) return;
+  e.stopPropagation();
+  var action = el.getAttribute('data-action');
+  var tid    = el.getAttribute('data-tid');
+  switch(action) {
+    case 'toggle':
+      toggleTaskAndRefresh(tid);
+      break;
+    case 'edit':
+      openEditModal(tid);
+      break;
+    case 'resched':
+      openReschedModal(tid);
+      break;
+    case 'openinstr':
+      openInstrView(tid);
+      break;
+    case 'delete':
+      confirmDelete(tid);
+      break;
+  }
+}
+
+// Attach to day panel list and sheet list
+(function(){
+  function wirePanel(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', handleTaskAction);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){
+      wirePanel('dayPanelList');
+      wirePanel('daySheetList');
+    });
+  } else {
+    wirePanel('dayPanelList');
+    wirePanel('daySheetList');
+  }
+})();
+
 // ═══════════════════════════════════════════════════════════════════════
 // V12 ADDITIONS — Instructions view, Manage delegation, Upload, Photos
 // ═══════════════════════════════════════════════════════════════════════
@@ -4105,21 +4156,393 @@ function taskCardHTML(task) {
     + '</div>';
 }
 
-// add openinstr to the day panel handler too
+// (openinstr handled in handleTaskAction above)
+
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FEATURE ADDITIONS: Overdue detection, badges, who-completed prompt, empty states
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── OVERDUE HELPERS ───────────────────────────────────────────────────────────
+
+function isOverdue(task) {
+  if (task.done) return false;
+  var today = new Date(TODAY_Y, TODAY_M, TODAY_D);
+  var due   = new Date(task.year, task.month, task.day);
+  return due < today;
+}
+
+function getOverdueTasks() {
+  return tasks.filter(isOverdue);
+}
+
+// ── OVERDUE BADGE: bottom nav Calendar tab ────────────────────────────────────
+
+function updateOverdueBadge() {
+  var count = getOverdueTasks().length;
+  // Mobile bottom nav badge
+  var badge = document.getElementById('overdueNavBadge');
+  if (badge) {
+    badge.textContent = count;
+    badge.style.display = count > 0 ? '' : 'none';
+  }
+  // Desktop sidebar alert
+  var alert = document.getElementById('overdueAlert');
+  var alertCount = document.getElementById('overdueAlertCount');
+  if (alert) alert.style.display = count > 0 ? '' : 'none';
+  if (alertCount) alertCount.textContent = count + ' task' + (count !== 1 ? 's' : '') + ' past due';
+}
+
+// Patch updateStats to also update the overdue badge
 (function(){
-  var _orig = window.handleTaskAction;
-  if (!_orig) return;
-  window.handleTaskAction = function(e) {
-    var el = e.target.closest('[data-action]');
-    if (!el) return;
-    if (el.getAttribute('data-action') === 'openinstr') {
-      e.stopPropagation();
-      openInstrView(el.getAttribute('data-tid'));
-      return;
-    }
-    _orig(e);
+  var _orig = window.updateStats;
+  window.updateStats = function() {
+    _orig();
+    updateOverdueBadge();
   };
 })();
+
+// ── OVERDUE CHIP STYLING in renderMonth ──────────────────────────────────────
+// Patch renderMonth to add red-dot indicator on cells with overdue tasks
+
+(function(){
+  var _orig = window.renderMonth;
+  window.renderMonth = function() {
+    _orig();
+    // After rendering, mark cells that have overdue tasks
+    var overdueTasks = getOverdueTasks();
+    if (!overdueTasks.length) return;
+
+    // Group overdue tasks by day key
+    var overdueDays = {};
+    overdueTasks.forEach(function(t) {
+      var key = t.year + '-' + t.month + '-' + t.day;
+      overdueDays[key] = (overdueDays[key] || 0) + 1;
+    });
+
+    // Find all month cells and check if they have overdue tasks
+    document.querySelectorAll('.month-cell').forEach(function(cell) {
+      var dateEl = cell.querySelector('.month-date');
+      if (!dateEl) return;
+      var d = parseInt(dateEl.textContent);
+      // Figure out which month/year this cell belongs to from the cell's classes
+      var isOther = cell.classList.contains('other-month');
+      if (isOther) return; // skip other-month cells for simplicity
+      var key = curYear + '-' + curMonth + '-' + d;
+      if (overdueDays[key]) {
+        // Add a red overdue indicator dot in top-right of the date
+        if (!cell.querySelector('.overdue-dot')) {
+          var dot = document.createElement('div');
+          dot.className = 'overdue-dot';
+          dot.title = overdueDays[key] + ' overdue';
+          dateEl.style.position = 'relative';
+          cell.insertBefore(dot, dateEl);
+        }
+      }
+    });
+  };
+})();
+
+// ── OVERDUE VIEW: click stat badge shows overdue list ─────────────────────────
+// Add "Overdue" section to openStatPanel when type is 'overdue'
+
+(function(){
+  var _orig = window.openStatPanel;
+  window.openStatPanel = function(type) {
+    if (type !== 'overdue') { _orig(type); return; }
+
+    var overdue = getOverdueTasks().sort(function(a,b){
+      return new Date(a.year,a.month,a.day) - new Date(b.year,b.month,b.day);
+    });
+
+    var titleEl = document.getElementById('statPanelTitle');
+    var subEl   = document.getElementById('statPanelSub');
+    var listEl  = document.getElementById('statPanelList');
+    if (titleEl) titleEl.textContent = 'Overdue Tasks';
+    if (subEl)   subEl.textContent   = overdue.length + ' task' + (overdue.length !== 1 ? 's' : '') + ' past due';
+
+    if (listEl) {
+      if (!overdue.length) {
+        listEl.innerHTML = '<div style="font-size:14px;color:var(--green);padding:20px 4px;text-align:center;">No overdue tasks \u2713</div>';
+      } else {
+        listEl.innerHTML = overdue.map(function(task) {
+          var c = CAT[task.cat] || CAT.equipment;
+          var due = new Date(task.year, task.month, task.day);
+          var daysLate = Math.floor((new Date(TODAY_Y,TODAY_M,TODAY_D) - due) / 86400000);
+          var lateStr = daysLate === 1 ? '1 day overdue' : daysLate + ' days overdue';
+          return '<div class="day-task-item" style="background:' + c.bg + ';border-color:var(--red-mid);border-left:3px solid var(--red);">'
+            + '<div style="display:flex;align-items:flex-start;gap:8px;">'
+            + '<div style="flex:1;min-width:0;">'
+            + '<div class="day-task-name" style="color:' + c.text + ';">' + task.name + '</div>'
+            + '<div class="day-task-meta">' + MONTHS()[task.month].slice(0,3) + ' ' + task.day + (getUserName(task.assignId) ? ' \xb7 ' + getUserName(task.assignId) : '') + '</div>'
+            + '</div>'
+            + '<span style="font-size:11px;font-weight:600;color:var(--red);white-space:nowrap;">' + lateStr + '</span>'
+            + '</div>'
+            + '<div style="margin-top:8px;display:flex;gap:6px;">'
+            + '<button class="task-instructions-btn" style="color:var(--green);border-color:#81C995;background:var(--green-light);font-weight:600;" onclick="quickCompleteOverdue(' + task.id + ')">Mark Done</button>'
+            + '<button class="task-instructions-btn" style="color:' + c.text + ';border-color:' + c.border + ';" onclick="openReschedModal(' + task.id + ');closeStatPanel();">Reschedule</button>'
+            + '</div>'
+            + '</div>';
+        }).join('');
+      }
+    }
+
+    // Show panel
+    if (window.innerWidth < 768) {
+      var sheet = document.getElementById('statSheetOverlay');
+      if (sheet) {
+        var st = document.getElementById('statSheetTitle');
+        var ss = document.getElementById('statSheetSub');
+        var sl = document.getElementById('statSheetList');
+        if (st) st.textContent = 'Overdue Tasks';
+        if (ss) ss.textContent = overdue.length + ' task' + (overdue.length !== 1 ? 's' : '') + ' past due';
+        if (sl && listEl) sl.innerHTML = listEl.innerHTML;
+        sheet.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+    } else {
+      var panel = document.getElementById('statPanel');
+      var overlay = document.getElementById('dimOverlay');
+      if (panel) panel.classList.add('open');
+      if (overlay) overlay.classList.add('active');
+    }
+    statPanelOpen = true;
+  };
+})();
+
+function quickCompleteOverdue(taskId) {
+  // Show who-completed prompt then mark done
+  showWhoCompletedPrompt(taskId, function(name) {
+    var task = tasks.find(function(t){ return String(t.id) === String(taskId); });
+    if (!task) return;
+    task.done = true;
+    task._completedBy = name;
+    if (typeof sbWrite !== 'undefined' && sbReady) {
+      sbWrite('Mark done', function(){ return sbPatch('tasks?id=eq.' + taskId, { done: true }); });
+      writeCompletionLog(task, true, name);
+    }
+    renderCal(); updateStats();
+    openStatPanel('overdue'); // refresh the panel
+    showToast(task.name + ' marked complete', 'success');
+  });
+}
+
+// ── WHO COMPLETED IT — modal prompt ──────────────────────────────────────────
+
+function showWhoCompletedPrompt(taskId, onConfirm) {
+  var task = tasks.find(function(t){ return String(t.id) === String(taskId); });
+  var modal = document.getElementById('whoCompletedModal');
+  if (!modal) {
+    // Create it if it doesn't exist
+    modal = document.createElement('div');
+    modal.id = 'whoCompletedModal';
+    modal.className = 'modal-overlay';
+    modal.style.display = 'none';
+    modal.innerHTML = '<div class="modal" style="max-width:400px;">'
+      + '<div class="modal-hdr"><div class="modal-title">Who completed this?</div>'
+      + '<button class="modal-close" onclick="closeWhoModal()">&#215;</button></div>'
+      + '<div id="whoCompletedTaskName" style="font-size:14px;color:var(--text2);margin-bottom:16px;"></div>'
+      + '<div id="whoCompletedList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>'
+      + '<div class="modal-footer" style="margin-top:12px;">'
+      + '<button class="btn-ghost" onclick="closeWhoModal()">Cancel</button>'
+      + '<button class="btn-primary" id="whoConfirmBtn">Confirm</button>'
+      + '</div></div>';
+    document.body.appendChild(modal);
+  }
+
+  var selectedName = { value: null };
+
+  // Populate task name
+  var nameEl = document.getElementById('whoCompletedTaskName');
+  if (nameEl && task) nameEl.textContent = task.name;
+
+  // Build team list + "Me (Director)" option
+  var list = document.getElementById('whoCompletedList');
+  var options = [{ id: 0, name: 'Me (Director)' }].concat(users.map(function(u){ return { id: u.id, name: u.name }; }));
+
+  // Pre-select assignee if set
+  var preselect = (task && task.assignId) ? String(task.assignId) : '0';
+  selectedName.value = options.find(function(o){ return String(o.id) === preselect; });
+  if (!selectedName.value) selectedName.value = options[0];
+
+  list.innerHTML = options.map(function(opt) {
+    var isSel = String(opt.id) === preselect;
+    return '<button class="who-option' + (isSel ? ' selected' : '') + '" data-who-id="' + opt.id + '" data-who-name="' + opt.name + '"'
+      + ' style="text-align:left;background:' + (isSel ? 'var(--green-light)' : 'var(--bg)') + ';border:1.5px solid ' + (isSel ? '#81C995' : 'var(--border-md)') + ';border-radius:8px;padding:12px 14px;font-size:14px;font-weight:' + (isSel ? '600' : '400') + ';color:' + (isSel ? 'var(--green)' : 'var(--text)') + ';cursor:pointer;font-family:var(--font-body);">'
+      + opt.name
+      + '</button>';
+  }).join('');
+
+  // Wire option buttons
+  list.querySelectorAll('.who-option').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      list.querySelectorAll('.who-option').forEach(function(b) {
+        b.style.background = 'var(--bg)';
+        b.style.borderColor = 'var(--border-md)';
+        b.style.fontWeight = '400';
+        b.style.color = 'var(--text)';
+      });
+      btn.style.background = 'var(--green-light)';
+      btn.style.borderColor = '#81C995';
+      btn.style.fontWeight = '600';
+      btn.style.color = 'var(--green)';
+      selectedName.value = { id: btn.dataset.whoId, name: btn.dataset.whoName };
+    });
+  });
+
+  // Confirm button
+  var confirmBtn = document.getElementById('whoConfirmBtn');
+  confirmBtn.onclick = function() {
+    var name = selectedName.value ? selectedName.value.name : 'Me (Director)';
+    closeWhoModal();
+    onConfirm(name);
+  };
+
+  modal.style.display = 'flex';
+}
+
+function closeWhoModal() {
+  var modal = document.getElementById('whoCompletedModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// ── PATCH toggleTaskAndRefresh to show who-completed prompt ───────────────────
+
+(function(){
+  var _orig = window.toggleTaskAndRefresh;
+  window.toggleTaskAndRefresh = function(id) {
+    var task = tasks.find(function(t){ return String(t.id) === String(id); });
+    if (!task) return;
+
+    if (!task.done) {
+      // Marking as DONE — show who completed it
+      showWhoCompletedPrompt(id, function(completedBy) {
+        task.done = true;
+        task._completedBy = completedBy;
+        renderDayPanelList(); renderMonth(); updateStats();
+        var daySheet = document.getElementById('daySheetOverlay');
+        if (daySheet && daySheet.classList.contains('open')) {
+          var src = document.getElementById('dayPanelList');
+          var dst = document.getElementById('daySheetList');
+          if (src && dst) { dst.innerHTML = src.innerHTML; wireSheetClicks(dst); }
+        }
+        if (typeof sbWrite !== 'undefined' && sbReady) {
+          sbWrite('Mark done', function(){ return sbPatch('tasks?id=eq.' + id, { done: true }); });
+          writeCompletionLog(task, true, completedBy);
+        }
+        showToast('\u2713 ' + task.name + ' \u2014 ' + completedBy, 'success');
+      });
+    } else {
+      // Un-marking — no prompt needed
+      _orig(id);
+    }
+  };
+})();
+
+// ── PATCH writeCompletionLog to accept completedBy override ──────────────────
+
+(function(){
+  var _origLog = window.writeCompletionLog;
+  window.writeCompletionLog = function(task, markingDone, completedByOverride) {
+    if (!markingDone) return;
+    var assignedName = completedByOverride || getUserName(task.assignId) || 'Unassigned';
+    var logRow = {
+      task_id:      String(task.id),
+      task_name:    task.name,
+      cat:          task.cat,
+      completed_by: assignedName,
+      completed_at: new Date().toISOString(),
+      notes:        ''
+    };
+    histLog.unshift(Object.assign({ id: 'local-' + Date.now() }, logRow));
+    var histView = document.getElementById('view-history');
+    if (histView && histView.classList.contains('active')) renderHistoryList();
+    if (typeof sbWrite !== 'undefined' && sbReady) {
+      sbWrite('Completion log', function(){ return sbPost('completion_log', logRow); });
+    }
+  };
+})();
+
+// ── BETTER EMPTY STATES ───────────────────────────────────────────────────────
+
+(function(){
+  var _origHistory = window.renderHistoryList;
+  window.renderHistoryList = function() {
+    var list = document.getElementById('historyList');
+    if (!list) { if (_origHistory) _origHistory(); return; }
+    var rows = histLog;
+    var hf = typeof histFilter !== 'undefined' ? histFilter : 'all';
+    if (hf !== 'all') rows = rows.filter(function(r){ return r.cat === hf; });
+    var count = document.getElementById('historyCount');
+    if (count) count.textContent = rows.length + ' entries';
+    if (!rows.length) {
+      list.innerHTML = '<div style="text-align:center;padding:40px 20px;">'
+        + '<div style="font-size:36px;margin-bottom:12px;">&#10003;</div>'
+        + '<div style="font-size:15px;font-weight:500;color:var(--text);margin-bottom:6px;">No completions yet</div>'
+        + '<div style="font-size:13px;color:var(--text3);line-height:1.6;">Check off tasks on the calendar to build your audit trail. Every completion is logged here with timestamp and team member.</div>'
+        + '</div>';
+      return;
+    }
+    if (_origHistory) _origHistory();
+  };
+})();
+
+(function(){
+  var _origManage = window.renderManage;
+  window.renderManage = function() {
+    _origManage();
+    // Check if manageUpcoming has no tasks and give it a better empty state
+    var upEl = document.getElementById('manageUpcoming');
+    if (upEl && upEl.innerHTML.indexOf('no-tasks') !== -1) {
+      upEl.innerHTML = '<div style="text-align:center;padding:28px 16px;">'
+        + '<div style="font-size:32px;margin-bottom:10px;">&#127881;</div>'
+        + '<div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;">All caught up</div>'
+        + '<div style="font-size:12px;color:var(--text3);">No pending tasks. Add new ones from the calendar or Upload Manual.</div>'
+        + '</div>';
+    }
+  };
+})();
+
+// ── CSS for overdue dot and who-option ────────────────────────────────────────
+// Inject styles dynamically
+(function(){
+  var style = document.createElement('style');
+  style.textContent = [
+    '.overdue-dot {',
+    '  position:absolute; top:3px; right:3px;',
+    '  width:7px; height:7px; border-radius:50%;',
+    '  background:var(--red); flex-shrink:0;',
+    '  pointer-events:none;',
+    '}',
+    '.month-cell { position:relative; }',
+    '.month-cell.is-today .overdue-dot { top:2px; right:2px; }',
+    '.who-option { min-height:48px; width:100%; }',
+    '.who-option:hover { filter:brightness(.96); }',
+    /* Overdue count pill on bottom nav */
+    '.overdue-nav-badge {',
+    '  position:absolute; top:6px; right:8px;',
+    '  background:var(--red); color:white;',
+    '  font-size:9px; font-weight:700;',
+    '  border-radius:8px; padding:1px 5px;',
+    '  font-family:var(--mono);',
+    '  pointer-events:none;',
+    '}',
+  ].join('\n');
+  document.head.appendChild(style);
+})();
+
+// ── WIRE overdue badge click to open overdue stat panel ──────────────────────
+
+document.addEventListener('DOMContentLoaded', function() {
+  var badge = document.getElementById('overdueNavBadge');
+  if (badge) badge.addEventListener('click', function(e) {
+    e.stopPropagation();
+    openStatPanel('overdue');
+  });
+  updateOverdueBadge();
+});
 
 
 
