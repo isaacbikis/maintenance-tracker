@@ -3346,13 +3346,14 @@ function hideSbBanner() {
 }
 
 function updateQueueBadge() {
-  var el = document.getElementById('queueBadge');
-  if (!el) return;
-  if (writeQueue.length > 0) {
-    el.textContent = writeQueue.length + ' write' + (writeQueue.length > 1 ? 's' : '') + ' pending — tap to retry';
-    el.classList.add('show');
+  var badge = document.getElementById('queueBadge');
+  if (!badge) return;
+  var count = writeQueue.length;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = '';
   } else {
-    el.classList.remove('show');
+    badge.style.display = 'none';
   }
 }
 
@@ -3399,7 +3400,7 @@ function dbToUser(r) {
 }
 
 function userToDb(u) {
-  return { name: u.name, email: u.email, role: u.role, shift: u.shift, color: u.color };
+  return { name: u.name, email: u.email, role: u.role, color: u.color };
 }
 
 // ── SAFE WRITE (optimistic-first, queue on failure) ───────────────────────────
@@ -3412,7 +3413,7 @@ async function sbWrite(label, fn) {
     return res;
   } catch (err) {
     console.error('[sb] ' + label + ':', err.message);
-    showToast(label + ' failed — queued for retry', 'error');
+    // silently queue — no toast for write failures
     writeQueue.push(fn);
     updateQueueBadge();
     setSyncDot('error');
@@ -3422,16 +3423,19 @@ async function sbWrite(label, fn) {
 
 async function retryQueue() {
   if (!sb || writeQueue.length === 0) return;
-  showToast('Retrying ' + writeQueue.length + ' pending write' + (writeQueue.length > 1 ? 's' : '') + '…', '');
   var batch = writeQueue.splice(0);
   updateQueueBadge();
   for (var i = 0; i < batch.length; i++) {
-    try { await batch[i](); }
-    catch (e) { writeQueue.push(batch[i]); }
+    try {
+      var res = await batch[i]();
+      if (res && res.error) throw new Error(res.error.message);
+    } catch(e) {
+      console.warn('[retry]', e.message);
+      writeQueue.push(batch[i]);
+    }
   }
   updateQueueBadge();
-  if (writeQueue.length === 0) showToast('All writes synced ✓', 'success');
-  else showToast(writeQueue.length + ' write(s) still pending', 'error');
+  if (writeQueue.length === 0) setSyncDot('live');
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
