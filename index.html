@@ -728,19 +728,29 @@ body {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  height: var(--bottom-nav-h);
+  height: auto;
+  min-height: var(--bottom-nav-h);
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 150;
   box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
 }
-.bottom-nav-items { display: flex; height: 100%; }
+.bottom-nav-items {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  width: 100%;
+  overflow: hidden;
+}
 .bottom-nav-item {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 3px; cursor: pointer;
+  gap: 2px; cursor: pointer;
   background: none; border: none;
   font-family: var(--font-body);
-  min-width: 56px; min-height: 56px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 6px 2px;
   transition: background .1s;
   -webkit-tap-highlight-color: transparent;
   border-radius: 0;
@@ -748,8 +758,8 @@ body {
 }
 .bottom-nav-item:active { background: rgba(0,0,0,0.04); }
 .bottom-nav-item.active { color: var(--red); }
-.bni-icon { font-size: 22px; line-height: 1; }
-.bni-label { font-size: 10px; font-weight: 500; letter-spacing: .01em; }
+.bni-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.bni-label { font-size: clamp(8px, 2vw, 10px); font-weight: 500; letter-spacing: .01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 
 /* ── BOTTOM SHEET (mobile bottom sheets) ── */
 .sheet-overlay {
@@ -1440,6 +1450,17 @@ body {
         </div>
         <button class="btn-primary" style="width:100%;justify-content:center;" id="uploadParseBtn" onclick="parseUploadedFiles()">&#129302; Parse with Grok</button>
       </div>
+    </div>
+  </div>
+
+  <!-- SIGN OUT -->
+  <div class="settings-card" style="margin-top:8px;">
+    <div class="settings-card-hdr">
+      <div class="settings-icon" style="background:#FCE8E6;">&#128274;</div>
+      <div><div class="settings-title">Device Access</div><div class="settings-sub">Sign out to require the store code again on this device</div></div>
+    </div>
+    <div class="settings-body">
+      <button class="btn-danger" style="width:100%;justify-content:center;" onclick="if(confirm('Sign out of this device? You will need the store code to get back in.')){clearAuthToken();location.reload();}">Sign out of this device</button>
     </div>
   </div>
 </div>
@@ -2951,15 +2972,7 @@ function FREQ(k) {
 }
 (function(){var _d=new Date();document.getElementById('manualDate').value=_d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0')+'-'+String(_d.getDate()).padStart(2,'0');})();
 loadSettings();
-applyI18n();
-populateSelects();
-renderCal();
-updateStats();
-document.getElementById('todayStrip').classList.add('expanded');
-document.querySelectorAll('.view').forEach(el=>{el.style.display='none';el.classList.remove('active');});
-const cv=document.getElementById('view-calendar');cv.style.display='flex';cv.classList.add('active');
-document.getElementById('monthViewWrap').style.display='flex';
-document.getElementById('weekView').style.display='none';
+// App init handled by launchApp() in auth gate
 
 
 // ═══════════════════════════════════════════════════════════
@@ -3891,8 +3904,7 @@ async function loadCompletionHistory() {
 })();
 
 // ── KICK OFF ──────────────────────────────────────────────────────────────────
-// Slight delay so the existing init block finishes rendering first
-setTimeout(initSupabase, 300);
+// App init is now handled by the auth gate (checkAuth → launchApp or showAuthGate)
 
 
 
@@ -4547,43 +4559,7 @@ function updateOverdueBadge() {
 // ── OVERDUE CHIP STYLING in renderMonth ──────────────────────────────────────
 // Patch renderMonth to add red-dot indicator on cells with overdue tasks
 
-(function(){
-  var _orig = window.renderMonth;
-  window.renderMonth = function() {
-    _orig();
-    // After rendering, mark cells that have overdue tasks
-    var overdueTasks = getOverdueTasks();
-    if (!overdueTasks.length) return;
-
-    // Group overdue tasks by day key
-    var overdueDays = {};
-    overdueTasks.forEach(function(t) {
-      var key = t.year + '-' + t.month + '-' + t.day;
-      overdueDays[key] = (overdueDays[key] || 0) + 1;
-    });
-
-    // Find all month cells and check if they have overdue tasks
-    document.querySelectorAll('.month-cell').forEach(function(cell) {
-      var dateEl = cell.querySelector('.month-date');
-      if (!dateEl) return;
-      var d = parseInt(dateEl.textContent);
-      // Figure out which month/year this cell belongs to from the cell's classes
-      var isOther = cell.classList.contains('other-month');
-      if (isOther) return; // skip other-month cells for simplicity
-      var key = curYear + '-' + curMonth + '-' + d;
-      if (overdueDays[key]) {
-        // Add a red overdue indicator dot in top-right of the date
-        if (!cell.querySelector('.overdue-dot')) {
-          var dot = document.createElement('div');
-          dot.className = 'overdue-dot';
-          dot.title = overdueDays[key] + ' overdue';
-          dateEl.style.position = 'relative';
-          cell.insertBefore(dot, dateEl);
-        }
-      }
-    });
-  };
-})();
+// (overdue dot rendering removed per request)
 
 // ── OVERDUE VIEW: click stat badge shows overdue list ─────────────────────────
 // Add "Overdue" section to openStatPanel when type is 'overdue'
@@ -4850,14 +4826,7 @@ function closeWhoModal() {
 (function(){
   var style = document.createElement('style');
   style.textContent = [
-    '.overdue-dot {',
-    '  position:absolute; top:3px; right:3px;',
-    '  width:7px; height:7px; border-radius:50%;',
-    '  background:var(--red); flex-shrink:0;',
-    '  pointer-events:none;',
-    '}',
-    '.month-cell { position:relative; }',
-    '.month-cell.is-today .overdue-dot { top:2px; right:2px; }',
+// dot CSS removed,
     '.who-option { min-height:48px; width:100%; }',
     '.who-option:hover { filter:brightness(.96); }',
     /* Overdue count pill on bottom nav */
@@ -5121,10 +5090,28 @@ function executeAiAction(actionJson) {
         tasks.push(t);
         renderCal(); updateStats();
         if (typeof sbReady !== 'undefined' && sbReady) {
-          sbWrite('AI add task', function(){ return sb.from('tasks').insert({
-            name:t.name,freq:t.freq,cat:t.cat,day:t.day,month:t.month,year:t.year,
-            done:false,assign_id:t.assignId,summary:t.summary,steps:t.steps,custom_pattern:''
-          }); });
+          // Insert directly (not via sbWrite) so we get the real DB id back
+          // and can pre-register it in _echoSkip before the realtime event fires.
+          // This prevents the duplicate caused by realtime INSERT echoing back
+          // a task we already added optimistically with a temp local id.
+          (function(localTask) {
+            sb.from('tasks').insert({
+              name:localTask.name, freq:localTask.freq, cat:localTask.cat,
+              day:localTask.day, month:localTask.month, year:localTask.year,
+              done:false, assign_id:localTask.assignId,
+              summary:localTask.summary, steps:localTask.steps, custom_pattern:''
+            }).select().then(function(res) {
+              if (res.error) { console.error('[AI insert]', res.error.message); return; }
+              if (res.data && res.data[0]) {
+                var realId = String(res.data[0].id);
+                // Pre-register real id so onRealtimeTask skips the echo
+                if (typeof _echoSkip !== 'undefined') _echoSkip.add(realId);
+                // Swap temp id for real id in local tasks array
+                var idx = tasks.findIndex(function(x){ return x.id === localTask.id; });
+                if (idx !== -1) tasks[idx].id = res.data[0].id;
+              }
+            });
+          })(t);
         }
         return 'Added task "' + t.name + '"';
       }
@@ -5312,6 +5299,222 @@ async function sendAiMessage() {
 }
 
 })(); // end IIFE
+
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STORE CODE AUTH GATE
+// First visit: full-screen code entry. Correct code → token saved to localStorage.
+// Subsequent visits: token present → skip gate, go straight to app.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var AUTH_TOKEN_KEY = 'cfa_auth_token';
+var AUTH_VERSION   = 'v1';  // bump this to invalidate all existing tokens
+
+function checkAuth() {
+  try {
+    var stored = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (parsed && parsed.version === AUTH_VERSION && parsed.token) {
+        return true; // already authenticated on this device
+      }
+    }
+  } catch(e) {}
+  return false;
+}
+
+function saveAuthToken() {
+  localStorage.setItem(AUTH_TOKEN_KEY, JSON.stringify({
+    version: AUTH_VERSION,
+    token: 'cfa_authed',
+    ts: Date.now()
+  }));
+}
+
+function clearAuthToken() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+function verifyStoreCode(code) {
+  // Check against hardcoded store code — no Supabase call needed,
+  // avoids creating a second client before main initSupabase runs.
+  // To rotate: update STORE_CODE here and redeploy.
+  var STORE_CODE = '003643';
+  return String(code).trim() === STORE_CODE;
+}
+
+function showAuthGate() {
+  // Inject auth gate CSS
+  var s = document.createElement('style');
+  s.textContent = [
+    '#authGate{position:fixed;inset:0;z-index:9999;background:var(--bg);',
+    '  display:flex;align-items:center;justify-content:center;',
+    '  padding:24px;box-sizing:border-box;}',
+    '#authCard{background:var(--surface);border:1px solid var(--border);',
+    '  border-radius:20px;padding:36px 32px;width:100%;max-width:380px;',
+    '  box-shadow:0 8px 40px rgba(0,0,0,.12);text-align:center;}',
+    '#authLogo{font-size:48px;margin-bottom:16px;}',
+    '#authTitle{font-size:22px;font-weight:700;color:var(--text);margin-bottom:6px;}',
+    '#authSub{font-size:14px;color:var(--text3);margin-bottom:28px;line-height:1.5;}',
+    '#authCodeWrap{display:flex;gap:8px;justify-content:center;margin-bottom:20px;}',
+    '.auth-digit{width:48px;height:60px;border:2px solid var(--border-md);',
+    '  border-radius:10px;font-size:28px;font-weight:700;text-align:center;',
+    '  font-family:var(--mono);background:var(--bg);color:var(--text);',
+    '  outline:none;caret-color:transparent;transition:border-color .15s;}',
+    '.auth-digit:focus{border-color:var(--red);}',
+    '.auth-digit.filled{border-color:var(--red);background:var(--red-light);color:var(--red);}',
+    '.auth-digit.error{border-color:var(--red);background:#FCE8E6;animation:authShake .3s;}',
+    '@keyframes authShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}',
+    '#authSubmitBtn{width:100%;padding:14px;border-radius:10px;font-size:15px;',
+    '  font-weight:600;cursor:pointer;border:none;background:var(--red);color:white;',
+    '  font-family:var(--font-body);transition:background .15s;margin-bottom:12px;}',
+    '#authSubmitBtn:hover{background:#c0001f;}',
+    '#authSubmitBtn:disabled{background:var(--border-md);cursor:not-allowed;}',
+    '#authError{font-size:13px;color:var(--red);min-height:18px;margin-top:-4px;}',
+    '#authSpinner{display:none;font-size:13px;color:var(--text3);margin-top:8px;}',
+  ].join('');
+  document.head.appendChild(s);
+
+  // Build gate HTML
+  var gate = document.createElement('div');
+  gate.id = 'authGate';
+  gate.innerHTML = [
+    '<div id="authCard">',
+    '  <div id="authLogo">🍗</div>',
+    '  <div id="authTitle">CFA Maintenance Hub</div>',
+    '  <div id="authSub">Enter your 6-digit store code<br>to access this tool</div>',
+    '  <div id="authCodeWrap">',
+    '    <input class="auth-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="ad0">',
+    '    <input class="auth-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="ad1">',
+    '    <input class="auth-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="ad2">',
+    '    <input class="auth-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="ad3">',
+    '    <input class="auth-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="ad4">',
+    '    <input class="auth-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" id="ad5">',
+    '  </div>',
+    '  <button id="authSubmitBtn" disabled>Enter</button>',
+    '  <div id="authError"></div>',
+    '  <div id="authSpinner">Checking code…</div>',
+    '</div>',
+  ].join('');
+  document.body.appendChild(gate);
+
+  // Wire up digit inputs
+  var digits = document.querySelectorAll('.auth-digit');
+  var submitBtn = document.getElementById('authSubmitBtn');
+  var errorEl   = document.getElementById('authError');
+  var spinner   = document.getElementById('authSpinner');
+
+  function getCode() {
+    return Array.from(digits).map(function(d){ return d.value; }).join('');
+  }
+
+  function updateState() {
+    var code = getCode();
+    submitBtn.disabled = code.length < 6;
+    digits.forEach(function(d) {
+      d.classList.toggle('filled', d.value.length > 0);
+      d.classList.remove('error');
+    });
+    errorEl.textContent = '';
+  }
+
+  digits.forEach(function(inp, i) {
+    inp.addEventListener('input', function(e) {
+      // Only allow digits
+      inp.value = inp.value.replace(/[^0-9]/g, '').slice(-1);
+      updateState();
+      if (inp.value && i < 5) digits[i+1].focus();
+      if (getCode().length === 6) submitCode();
+    });
+    inp.addEventListener('keydown', function(e) {
+      if (e.key === 'Backspace' && !inp.value && i > 0) {
+        digits[i-1].value = '';
+        digits[i-1].focus();
+        updateState();
+      }
+    });
+    inp.addEventListener('paste', function(e) {
+      e.preventDefault();
+      var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g,'').slice(0,6);
+      pasted.split('').forEach(function(ch, j) {
+        if (digits[j]) { digits[j].value = ch; }
+      });
+      updateState();
+      var last = Math.min(pasted.length, 5);
+      digits[last].focus();
+      if (pasted.length === 6) submitCode();
+    });
+  });
+
+  submitBtn.addEventListener('click', submitCode);
+
+  // Focus first digit
+  setTimeout(function(){ digits[0].focus(); }, 100);
+
+  async function submitCode() {
+    var code = getCode();
+    if (code.length < 6) return;
+    submitBtn.disabled = true;
+    spinner.style.display = '';
+    errorEl.textContent = '';
+
+    var ok = verifyStoreCode(code);
+
+    spinner.style.display = 'none';
+    if (ok) {
+      saveAuthToken();
+      // Animate out and launch app
+      gate.style.transition = 'opacity .3s';
+      gate.style.opacity = '0';
+      setTimeout(function() {
+        gate.remove();
+        launchApp();
+      }, 300);
+    } else {
+      digits.forEach(function(d){ d.classList.add('error'); });
+      errorEl.textContent = 'Incorrect code. Try again.';
+      submitBtn.disabled = false;
+      // Clear and refocus
+      setTimeout(function(){
+        digits.forEach(function(d){ d.value=''; d.classList.remove('error','filled'); });
+        updateState();
+        digits[0].focus();
+      }, 800);
+    }
+  }
+}
+
+function launchApp() {
+  applyI18n();
+  populateSelects();
+  renderCal();
+  updateStats();
+  // Set initial view state
+  var ts = document.getElementById('todayStrip');
+  if (ts) ts.classList.add('expanded');
+  document.querySelectorAll('.view').forEach(function(el){
+    el.style.display = 'none'; el.classList.remove('active');
+  });
+  var cv = document.getElementById('view-calendar');
+  if (cv) { cv.style.display = 'flex'; cv.classList.add('active'); }
+  var mw = document.getElementById('monthViewWrap');
+  if (mw) mw.style.display = 'flex';
+  var wv = document.getElementById('weekView');
+  if (wv) wv.style.display = 'none';
+  // Connect to Supabase
+  setTimeout(initSupabase, 300);
+}
+
+// ── ENTRY POINT — replaces the bare setTimeout(initSupabase, 300) ──────────
+document.addEventListener('DOMContentLoaded', function() {
+  if (checkAuth()) {
+    launchApp();
+  } else {
+    showAuthGate();
+  }
+});
 
 
 
