@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E4002B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maintenance">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#E4002B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maintenance">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>CFA Maintenance Hub</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -3304,7 +3316,7 @@ setTimeout(initGestures, 150);
 
 // App version — increment this (e.g. '1.1', '1.2') every time you deploy a new file.
 // The update checker compares this against the live file on GitHub.
-const APP_VERSION = '1.1';
+const APP_VERSION = '1.0';
 
 const SUPABASE_URL  = 'https://cjgoaufrfhsndfirkdxt.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqZ29hdWZyZmhzbmRmaXJrZHh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDUyOTIsImV4cCI6MjA5MTA4MTI5Mn0.pdkz1zizjaUL6gC-BVfqUxkNRpHcaF17kWcCuRhFWAw';
@@ -5648,5 +5660,15 @@ setInterval(checkForUpdate, 10 * 60 * 1000);
 
 
 </script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js')
+      .then(function(reg) { console.log('[SW] Registered:', reg.scope); })
+      .catch(function(err) { console.log('[SW] Failed:', err); });
+  });
+}
+</script>
+
 </body>
 </html>
