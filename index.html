@@ -1209,6 +1209,46 @@ body {
   justify-content: center;
 }
 
+/* ── UPDATE BANNER ────────────────────────────────────────────────────────── */
+#updateBanner {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 800;
+  background: #1A73E8;
+  color: white;
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  display: none;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+#updateBanner .upd-text { flex: 1; }
+#updateBanner .upd-btn {
+  background: white;
+  color: #1A73E8;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+#updateBanner .upd-dismiss {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.7);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
 </style>
 </head>
 <body>
@@ -1256,6 +1296,13 @@ body {
   <button class="stats-strip-pill" style="background:var(--red);border-color:var(--red);" onclick="openAddModal()">
     <span style="color:white;font-size:13px;font-weight:600;">+ Add task</span>
   </button>
+</div>
+
+<!-- UPDATE BANNER -->
+<div id="updateBanner">
+  <span class="upd-text">&#128640; A new version is available</span>
+  <button class="upd-btn" onclick="location.reload(true)">Update now</button>
+  <button class="upd-dismiss" onclick="document.getElementById('updateBanner').style.display='none'" title="Dismiss">&#215;</button>
 </div>
 
 <div class="app-body">
@@ -2636,7 +2683,14 @@ ASSISTANT MODE (when answering questions or taking actions):
 function onApiKeyChange(){updateApiStatus(false);}
 function updateApiStatus(saved){const el=document.getElementById('apiStatus'),key=document.getElementById('grokApiKey').value.trim();if(!key){el.className='api-status none';el.textContent='○ No key saved';return;}el.className='api-status '+(saved?'ok':'none');el.textContent=saved?'● Key saved · ready to use':'○ Key entered but not saved';}
 function toggleApiKeyVis(){const inp=document.getElementById('grokApiKey'),btn=inp.nextElementSibling;if(inp.type==='password'){inp.type='text';btn.textContent='Hide';}else{inp.type='password';btn.textContent='Show';}}
-function saveApiKey(){const key=document.getElementById('grokApiKey').value.trim();if(!key){showToast('Please enter an API key','error');return;}localStorage.setItem('grokApiKey',key);updateApiStatus(true);showToast('API key saved','success');}
+function saveApiKey(){const key=document.getElementById('grokApiKey').value.trim();if(!key){showToast('Please enter an API key','error');return;}
+localStorage.setItem('grokApiKey',key);
+// Also persist to Supabase so all devices get it
+if(typeof sbReady!=='undefined'&&sbReady&&typeof sb!=='undefined'){
+  sb.from('app_settings').upsert({key:'grok_api_key',value:key},{onConflict:'key'})
+    .then(function(r){if(r.error)console.error('[settings] grok key save:',r.error.message);});
+}
+updateApiStatus(true);showToast('API key saved','success');}
 function testApiKey(){const key=localStorage.getItem('grokApiKey')||document.getElementById('grokApiKey').value.trim();if(!key){showToast('Save your API key first','error');return;}showToast('Testing connection…','');setTimeout(()=>{document.getElementById('apiStatus').className='api-status ok';document.getElementById('apiStatus').textContent='● Connected · Grok-2 ready';showToast('Connection successful!','success');},1400);}
 function saveInstructions(){localStorage.setItem('aiInstructions',document.getElementById('aiInstructions').value);showToast('Instructions saved','success');}
 function saveStoreSettings(){localStorage.setItem('storeNum',document.getElementById('storeNum').value);localStorage.setItem('storeLoc',document.getElementById('storeLoc').value);showToast('Settings saved','success');}
@@ -2655,12 +2709,14 @@ function updateStats(){
   document.getElementById('statTotal').textContent=tasks.length;
 }
 let toastTimer;
+var _toastTimer=null;
 function showToast(msg,type){
   var el=document.getElementById('toast');
   if(!el||!msg) return;
   el.textContent=msg;
   el.className='toast show'+(type?' '+type:'');
-  // No auto-dismiss — stays until replaced by a new toast
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){ el.classList.remove('show'); },2500);
 }
 
 // ── STAT PANEL (Due Today / This Week) ───────────────────────────────────────
@@ -3246,6 +3302,10 @@ setTimeout(initGestures, 150);
 // Project: https://cjgoaufrfhsndfirkdxt.supabase.co
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// App version — increment this (e.g. '1.1', '1.2') every time you deploy a new file.
+// The update checker compares this against the live file on GitHub.
+const APP_VERSION = '1.0';
+
 const SUPABASE_URL  = 'https://cjgoaufrfhsndfirkdxt.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqZ29hdWZyZmhzbmRmaXJrZHh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDUyOTIsImV4cCI6MjA5MTA4MTI5Mn0.pdkz1zizjaUL6gC-BVfqUxkNRpHcaF17kWcCuRhFWAw';
 
@@ -3375,6 +3435,35 @@ async function retryQueue() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+
+// ── SHARED SETTINGS (Supabase app_settings) ──────────────────────────────────
+// Reads shared settings from Supabase and populates localStorage so all
+// existing getItem('grokApiKey') calls keep working without any changes.
+async function loadSharedSettings() {
+  try {
+    var res = await sb.from('app_settings').select('key,value');
+    if (res.error || !res.data) return;
+    res.data.forEach(function(row) {
+      if (row.key === 'grok_api_key' && row.value) {
+        // Only overwrite local if Supabase has a value
+        localStorage.setItem('grokApiKey', row.value);
+        // Update the settings input field if visible
+        var inp = document.getElementById('grokApiKey');
+        if (inp && !inp.value) inp.value = row.value;
+        updateApiStatus(true);
+      }
+      if (row.key === 'ai_instructions' && row.value) {
+        localStorage.setItem('aiInstructions', row.value);
+      }
+    });
+  } catch(e) {
+    console.warn('[settings] loadSharedSettings:', e.message);
+  }
+}
+
+// Also save AI instructions to Supabase when saved in settings
+// (patch saveStoreSettings to also sync aiInstructions)
+
 async function initSupabase() {
   setSyncDot('syncing');
   showSbBanner('warn', '⏳  Connecting to database…');
@@ -3420,8 +3509,10 @@ async function initSupabase() {
     sbReady = true;
     hideSbBanner();
     setSyncDot('live');
-    showToast('✓ Connected', 'success');
+    // Connected toast removed
 
+    // Load shared settings from app_settings (Grok key, AI instructions, etc)
+    loadSharedSettings();
     // Re-render everything
     renderCal();
     updateStats();
@@ -5516,6 +5607,40 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+
+
+
+// ── UPDATE CHECKER ────────────────────────────────────────────────────────────
+// Fetches the live index.html from GitHub Pages, reads its APP_VERSION,
+// and shows a banner if it's newer than the currently running version.
+// Runs once on load (after 8s to avoid slowing startup) then every 10 minutes.
+
+function checkForUpdate() {
+  // Only run when online
+  if (!navigator.onLine) return;
+
+  // Fetch the live file with cache-busting so we always get the latest
+  var url = location.href.split('?')[0] + '?_v=' + Date.now();
+  fetch(url, { cache: 'no-store' })
+    .then(function(r) { return r.text(); })
+    .then(function(text) {
+      // Extract APP_VERSION from the fetched file
+      var match = text.match(/const APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+      if (!match) return;
+      var liveVersion = match[1];
+      if (liveVersion !== APP_VERSION) {
+        // Newer version detected — show the banner
+        var banner = document.getElementById('updateBanner');
+        if (banner) banner.style.display = 'flex';
+      }
+    })
+    .catch(function() {}); // silent fail — no network or CORS issue
+}
+
+// First check after 8 seconds (let app fully load first)
+setTimeout(checkForUpdate, 8000);
+// Then every 10 minutes
+setInterval(checkForUpdate, 10 * 60 * 1000);
 
 
 </script>
