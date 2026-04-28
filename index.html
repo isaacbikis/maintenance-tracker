@@ -303,10 +303,10 @@ body {
 .view-toggle-btn:hover:not(.active) { background: var(--bg); }
 
 /* ── CALENDAR BODY ── */
-.cal-body { flex: 1; display: flex; overflow: hidden; transition: all .25s ease; }
+.cal-body { flex: 1; display: flex; overflow-y: auto; -webkit-overflow-scrolling: touch; transition: all .25s ease; }
 
 /* ── MONTH VIEW ── */
-.month-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; transition: flex .25s ease; }
+.month-view { flex: 1; display: flex; flex-direction: column; overflow: visible; transition: flex .25s ease; }
 .month-day-headers {
   display: grid; grid-template-columns: repeat(7,1fr);
   border-bottom: 1px solid var(--border); flex-shrink: 0;
@@ -316,7 +316,7 @@ body {
   color: var(--text3); text-transform: uppercase;
   letter-spacing: .05em; padding: 8px 0;
 }
-.month-grid { flex: 1; display: grid; overflow: hidden; }
+.month-grid { flex: 1; display: grid; overflow: visible; }
 .month-week {
   display: grid; grid-template-columns: repeat(7,1fr);
   border-bottom: 1px solid var(--border); min-height: 0;
@@ -324,10 +324,10 @@ body {
 .month-week:last-child { border-bottom: none; }
 .month-cell {
   border-right: 1px solid var(--border);
-  padding: 4px 0 2px;
+  padding: 4px 0 4px;
   display: flex; flex-direction: column;
-  overflow: hidden; cursor: pointer;
-  transition: background .08s; min-height: 0; position: relative;
+  overflow: visible; cursor: pointer;
+  transition: background .08s; min-height: 80px; position: relative;
 }
 .month-cell:last-child { border-right: none; }
 .month-cell:hover { background: #F8F9FA; }
@@ -912,6 +912,10 @@ body {
     padding: 14px;
     padding-bottom: calc(var(--bottom-nav-h) + 16px + env(safe-area-inset-bottom));
   }
+  /* Calendar view has its own layout — needs same bottom clearance */
+  #view-calendar {
+    padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+  }
 
   /* Cal toolbar compact */
   .cal-toolbar { padding: 8px 12px; gap: 6px; }
@@ -1261,6 +1265,17 @@ body {
   line-height: 1;
 }
 
+/* ── MOBILE CALENDAR SCROLLABLE ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .cal-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .month-cell { min-height: 72px; }
+  .month-chip { font-size: 10px; padding: 1px 4px 1px 3px; }
+  #monthViewWrap {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1366,7 +1381,7 @@ body {
   </div>
 
   <!-- MONTH -->
-  <div id="monthViewWrap" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+  <div id="monthViewWrap" style="flex:1;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;">
     <div class="month-view" id="monthView">
       <div class="month-day-headers">
         <div class="month-dh" data-i18n="sun">Sun</div><div class="month-dh" data-i18n="mon">Mon</div><div class="month-dh" data-i18n="tue">Tue</div>
@@ -2263,7 +2278,7 @@ function renderMonth(){
       dateEl.className='month-date';dateEl.textContent=cellD;
       cell.appendChild(dateEl);
 
-      const MAX_CHIPS=3;
+      const MAX_CHIPS=5;
       dayTasks.slice(0,MAX_CHIPS).forEach(t=>{
         const c=CAT[t.cat];
         const chip=document.createElement('div');
