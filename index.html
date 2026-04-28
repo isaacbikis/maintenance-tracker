@@ -316,18 +316,20 @@ body {
   color: var(--text3); text-transform: uppercase;
   letter-spacing: .05em; padding: 8px 0;
 }
-.month-grid { flex: 1; display: grid; overflow: visible; }
+.month-grid { flex: 1; display: flex; flex-direction: column; overflow: visible; }
 .month-week {
   display: grid; grid-template-columns: repeat(7,1fr);
-  border-bottom: 1px solid var(--border); min-height: 0;
+  border-bottom: 1px solid var(--border);
+  min-height: 0; flex: 1;
 }
 .month-week:last-child { border-bottom: none; }
 .month-cell {
   border-right: 1px solid var(--border);
-  padding: 4px 0 4px;
+  padding: 4px 0 2px;
   display: flex; flex-direction: column;
-  overflow: visible; cursor: pointer;
-  transition: background .08s; min-height: 80px; position: relative;
+  overflow: hidden; cursor: pointer;
+  transition: background .08s; min-height: 0; position: relative;
+  flex: 1;
 }
 .month-cell:last-child { border-right: none; }
 .month-cell:hover { background: #F8F9FA; }
@@ -1268,7 +1270,7 @@ body {
 /* ── MOBILE CALENDAR SCROLLABLE ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .cal-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .month-cell { min-height: 72px; }
+  /* month-cell height set by flex, not min-height */
   .month-chip { font-size: 10px; padding: 1px 4px 1px 3px; }
   #monthViewWrap {
     overflow-y: auto;
@@ -3271,22 +3273,7 @@ function initGestures() {
     return document.getElementById(id);
   }).filter(Boolean);
 
-  calEls.forEach(function(el) {
-    var sx, sy, st;
-    el.addEventListener('touchstart', function(e) {
-      sx = e.touches[0].clientX;
-      sy = e.touches[0].clientY;
-      st = Date.now();
-    }, {passive: true});
-    el.addEventListener('touchend', function(e) {
-      if (!st) return;
-      var dx = e.changedTouches[0].clientX - sx;
-      var dy = e.changedTouches[0].clientY - sy;
-      if (Date.now() - st < 400 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-        calNav(dx < 0 ? 1 : -1);
-      }
-    }, {passive: true});
-  });
+  // Horizontal swipe to change month removed — use arrow buttons instead
 
   // Bottom sheet swipe-down to dismiss
   ['daySheetOverlay', 'statSheetOverlay'].forEach(function(id) {
