@@ -1,35 +1,26 @@
 {
+  "id": "com.cfacherrycreek.maintenance",
   "name": "CFA Maintenance Hub",
   "short_name": "Maintenance",
-  "description": "CFA Cherry Creek maintenance tracking",
+  "description": "CFA Cherry Creek internal maintenance tracking tool",
   "start_url": "/maintenance-tracker/",
   "scope": "/maintenance-tracker/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#E4002B",
   "theme_color": "#E4002B",
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/maintenance-tracker/Emoji_hammer.png",
-      "sizes": "192x192",
+      "sizes": "any",
       "type": "image/png",
       "purpose": "any"
     },
     {
       "src": "/maintenance-tracker/Emoji_hammer.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/maintenance-tracker/Emoji_hammer.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/maintenance-tracker/Emoji_hammer.png",
-      "sizes": "512x512",
+      "sizes": "any",
       "type": "image/png",
       "purpose": "maskable"
     }
