@@ -13,14 +13,26 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/maintenance-tracker/Emoji_hammer.png",
-      "sizes": "any",
+      "src": "/maintenance-tracker/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/maintenance-tracker/Emoji_hammer.png",
-      "sizes": "any",
+      "src": "/maintenance-tracker/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/maintenance-tracker/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/maintenance-tracker/icon-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
