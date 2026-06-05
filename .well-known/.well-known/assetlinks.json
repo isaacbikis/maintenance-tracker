@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.cfacherrycreek.maintenance",
+        "sha256_cert_fingerprints": ["89:B6:5A:16:66:C6:1E:6F:3F:25:B0:16:A5:8C:E4:3A:1B:E9:F6:B3:7F:80:B8:C3:63:BE:7C:CC:48:53:D8:CC"]
+      }
+    }]
